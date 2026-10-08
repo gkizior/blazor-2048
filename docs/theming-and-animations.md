@@ -67,23 +67,28 @@ Goals: smooth slides, a merge "pop", a spawn scale-in, **no lag and no dropped i
 
 ### Positioned tiles with stable keys
 
-Tiles are absolutely positioned in a `.tile-layer` over the grid. Each tile's position is a
-`transform` computed from two custom properties that Blazor sets:
+Tiles are absolutely positioned in a `.tile-layer` over the grid. Each tile's position is an inline
+`transform` in multiples of `--step` (one cell plus one gap), from a per-size cache in `GameBoard`:
 
 ```html
-<div class="tile tile-8" style="--r:1;--c:2"> <div class="tile-inner">8</div> </div>
+<div class="tile tile-8 tl-1" style="transform:translate(calc(var(--step)*2),calc(var(--step)*1))">
+  <div class="tile-inner">8</div>
+</div>
 ```
 
 ```css
-.tile {
-    transform: translate(calc(var(--c) * (100% + var(--gap))), calc(var(--r) * (100% + var(--gap))));
-    transition: transform var(--slide) var(--ease-out);
-}
+.tile { transition: transform var(--slide) var(--ease-out); contain: size layout style; }
 ```
 
-Each element is keyed with `@key="tile.Id"`. When a tile slides, Blazor keeps the same element and
-only updates `--r`/`--c`; the browser transitions `transform` on the compositor. Only `transform`
-and `opacity` animate, so there is no layout work.
+Each element is keyed per tile (`@key`). When a tile slides, Blazor keeps the same element and only
+updates its `style`; the browser transitions `transform` on the compositor. Only `transform` and
+`opacity` animate, so there is no layout work.
+
+Until board sizes, the position was two custom properties (`--r`/`--c`) and a `transform` rule that
+read them. On a 16x16 board that made style recalculation the biggest cost of a move: a custom
+property is inherited, so changing it on a tile also restyles its `.tile-inner`, and every tile got
+its own copy of the inherited custom property map. Setting `transform` directly (not inherited)
+means a slide restyles only the tile, not its child (see [Big boards](#big-boards)).
 
 ### Merges and spawns
 
@@ -125,9 +130,9 @@ sequenceDiagram
 There are no timers and no "busy" flag. If you press another key mid-animation, the engine moves
 immediately and Blazor re-renders:
 
-- Sliding tiles **retarget from where they are**: only `--r`/`--c` change on the same element, so
-  the browser starts the new transition from the current animated position.
-- Spawn and pop animations **keep playing**. `GameBoard.ClassFor` decides a tile's class
+- Sliding tiles **retarget from where they are**: only the inline `transform` changes on the same
+  element, so the browser starts the new transition from the current animated position.
+- Spawn and pop animations **keep playing**. `GameBoard.InfoFor` decides a tile's class
   (`tile-new`, `tile-merged`) when the tile first appears and keeps it for the tile's whole life,
   so the next render doesn't touch the class and can't cancel or restart the animation.
 - Retired merge sources are removed on the next move, as in the original game.
@@ -138,8 +143,45 @@ Nothing is queued or dropped.
 
 `GameBoard` overrides `ShouldRender` and only renders when something visible changed: a no-op move
 (pushing tiles against a wall), a non-game key, or the re-render Blazor would normally do after the
-awaited best-score save are all skipped. The 16 background cells live in `BoardCells`, which
-renders once. Tile classes and `--r/--c` styles come from caches, not per-render string building.
+awaited best-score save are all skipped. The N² background cells live in `BoardCells`, which only
+renders when N changes, and `NewGameButton` skips the renders the board's moves would cause. Tile
+classes, labels, `data-*` values and position styles come from caches, not per-render string
+building, and the keyed `@for` loop reads the engine's reused render list (no enumerator or LINQ).
+
+### Big boards
+
+Everything on the board scales with `--n` (tiles per side, set on `.game` by `GameBoard`):
+
+| Custom property | Value |
+|---|---|
+| `--board` | `min(92vw, 100dvh − 280px − safe areas, 400px + 20px × n)`: fills a phone, grows a little with N on desktop (480 px at 4x4, 600 px at 10x10) |
+| `--gap` | `clamp(2px, board × 0.13 / (n + 1), 14px)`: gaps shrink as the board grows |
+| `--cell` | `(board − (n + 1) × gap) / n` |
+| `--step` | `cell + gap`, the distance between neighbouring tiles |
+| `--tile-radius` | `clamp(3px, cell × 0.07, 6px)` |
+
+- **Fonts follow cell size and label length.** `GameBoard` adds `tl-{length}` to each tile
+  (`tl-1` … `tl-8`), and the font is a fraction of `--cell` for that length (0.5 for one or two
+  characters down to 0.17 for eight), so any number fits its tile at any N.
+- **Compact labels.** On 8x8 to 11x11, values from 16384 up are written `16K`, `128K`, `1M`, so
+  131072 on a 10x10 phone board is four characters (about 11 px on a 31 px cell) instead of six. On
+  12x12 and up (phone cells of 26 px or less) values from 1024 up are compact too (`1K`, `8K`), so a
+  label is at most three characters until 131072. The full value stays in `data-value` and the
+  tile's `title`.
+- **Registered lengths.** `--board`, `--gap`, `--cell`, `--step` and `--tile-radius` are declared
+  with `@property { syntax: '<length>' }`, so they compute to plain pixels once on `.board`.
+  Unregistered, every tile re-evaluated the whole `calc()`/`min()`/`env()` chain behind `--cell` in
+  its width, font size and transform each time it was restyled. On 16x16 under 4x CPU throttling,
+  registering them halved the style time per restyled element (0.20 → 0.10 ms) and cut key-to-paint
+  from about 47–57 ms to 35 ms. CSS containment (`contain: strict` on the tile layer and cells,
+  `contain: size layout style` on tiles) and a permanent `will-change: transform` were measured
+  too and did not help, so they are not used.
+- **The title** is the current target (spec 011's easter egg) and can be up to nine digits; its font
+  is the classic size × 4 / digits (`--digits`), so it always fits beside the scores.
+- **First paint.** The board and title are hidden (`board-pending`, `title-pending`) until the saved
+  size is applied, so reloading an 8x8 game never flashes a 4x4 board or "2048".
+
+Measurements by size are in [spec 011's plan](../specs/011-board-sizes/plan.md#measurements).
 
 ### Why it felt choppy, and how it was measured
 

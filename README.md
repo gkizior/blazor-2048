@@ -17,12 +17,15 @@ Play it on your iPhone straight from Safari — no Mac, no App Store, no fees.
 ## Features
 
 - Standard 4×4 2048: slide tiles, merge equal numbers, reach 2048
+- Bigger boards from the New Game split button: 5×5 to 10×10, or any custom size from 2×2 to 16×16
+  (always square), each with its own best score; the last size is remembered
+- A small easter egg: the game is named after its target, so 6×6 is "8192" and 10×10 is "131072"
 - Swipe on touch screens, arrow keys (or WASD) on desktop
 - Smooth CSS animations: tiles slide, merges pop, new tiles scale in; input is never blocked,
   and `prefers-reduced-motion` is respected
 - Light, dark and system themes with a modern, high-contrast palette (remembered on the device)
-- Score, plus best score saved on the device
-- Win and game-over messages, "Keep going" after 2048, and a New Game button
+- Score, plus best score per board size saved on the device
+- Win and game-over messages, "Keep going" after the target tile
 - Built-in docs (the 📖 button): every Markdown file in this repo, with diagrams, in a DocFX-style viewer
 - Footer with the .NET runtime version, app version, commit and build date
 - Mobile-first layout that fits an iPhone screen with no scrolling or bounce
@@ -32,21 +35,21 @@ Play it on your iPhone straight from Safari — no Mac, no App Store, no fees.
 
 | Path | What's there |
 |---|---|
-| `src/Game2048.Core` | Pure C# game logic (`Game.cs`): sliding, merging, spawning, win/lose, tile ids for animations |
+| `src/Game2048.Core` | Pure C# game logic for N×N boards (`Game.cs`, `BoardSize.cs`): sliding, merging, spawning, win/lose, tile ids for animations, allocation-free moves |
 | `src/Blazor2048` | Blazor WebAssembly PWA: game board, theming, docs viewer, footer |
 | `tools/DocsBuilder` | Build-time tool: Markdown → HTML (Markdig), Mermaid → SVG (mermaid-cli) |
-| `tools/PerfTrace` | Developer tool: Chromium traces and per-frame tile sampling to measure animation smoothness |
+| `tools/PerfTrace` | Developer tool: Chromium traces, per-frame tile sampling and memory sampling, at any board size |
 | `specs/`, `.specify/` | Feature specs (spec, plan, tasks) and the project constitution, in the Spec Kit layout |
 | `docs/` | Project docs shown in the app ([architecture](docs/architecture.md), [engine](docs/game-engine.md), [testing](docs/testing.md), ...) |
-| `tests/Blazor2048.Tests` | xUnit v3 tests: game rules, tile tracking, docs generator, palette contrast |
-| `tests/Blazor2048.ComponentTests` | bUnit tests for the components (board, input, theme, footer, docs) |
+| `tests/Blazor2048.Tests` | xUnit v3 tests: game rules at every board size, validation, allocations, tile tracking, docs generator, palette contrast, icons |
+| `tests/Blazor2048.ComponentTests` | bUnit tests for the components (board, size menu and dialog, input, theme, footer, docs) |
 | `tests/Blazor2048.E2ETests` | Playwright for .NET end-to-end tests (`Microsoft.Playwright.Xunit.v3`) against the published app |
 | `scripts/prepare-pages.py` | Sets `<base href>` for GitHub Pages and adds `404.html` and `.nojekyll` |
 | `.github/workflows/deploy.yml` | Builds, tests, publishes, and deploys to GitHub Pages |
 
 It's Blazor first. Input, animations, theming and the docs are C#, Razor and CSS. There's no custom
 JavaScript: the only JS interop is the call to the browser's built-in `localStorage` (in
-`Services/BrowserStorage.cs`), so the best score and theme survive a reload. Mermaid diagrams are
+`Services/BrowserStorage.cs`), so best scores, the board size and the theme survive a reload. Mermaid diagrams are
 pre-rendered to SVG at build time, so no diagram library runs in the browser.
 See [Architecture](docs/architecture.md) for the details.
 

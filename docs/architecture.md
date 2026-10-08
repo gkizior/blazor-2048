@@ -7,11 +7,11 @@ run in the browser; GitHub Pages only serves files. There is no server code and 
 
 | Project | Kind | Role |
 |---|---|---|
-| `src/Game2048.Core` | Class library | Pure C# game rules. No Blazor or browser dependencies. |
+| `src/Game2048.Core` | Class library | Pure C# game rules for N×N boards (`Game`, `BoardSize`). No Blazor or browser dependencies. |
 | `src/Blazor2048` | Blazor WebAssembly PWA | Components, theming, docs viewer, service worker. |
 | `tools/DocsBuilder` | Console tool (build time only) | Turns the repo's Markdown into HTML for the docs viewer and pre-renders Mermaid diagrams. |
-| `tools/PerfTrace` | Console tool (developer only) | Records Chromium traces and per-frame tile samples of the board to measure animation smoothness. |
-| `tests/Blazor2048.Tests` | xUnit v3 | Engine rules, tile tracking, docs generator. |
+| `tools/PerfTrace` | Console tool (developer only) | Records Chromium traces and per-frame tile samples of the board at any board size, and memory over long sessions. |
+| `tests/Blazor2048.Tests` | xUnit v3 | Engine rules at every board size, validation, allocations, tile tracking, docs generator, specs, icons. |
 | `tests/Blazor2048.ComponentTests` | xUnit v3 + bUnit | Components rendered in memory. |
 | `tests/Blazor2048.E2ETests` | xUnit v3 + Playwright for .NET | The published site in headless Chromium. |
 
@@ -40,9 +40,10 @@ flowchart LR
 
 | Service | Purpose |
 |---|---|
-| `Game` | The engine instance. Scoped so a game survives a trip to the docs and back. |
+| `Game` | The engine instance. Scoped so a game (and its size) survives a trip to the docs and back. |
 | `BrowserStorage` | The only JS interop: `localStorage.getItem` / `setItem`. |
-| `BestScoreStore` | Best score, persisted through `BrowserStorage`. |
+| `BestScoreStore` | Best score per board size (`blazor2048.best.{N}x{N}`; the pre-sizes 4x4 key is migrated), persisted through `BrowserStorage`. |
+| `BoardSizeStore` | The last board size chosen (`blazor2048.size`); 4x4 when nothing valid is saved. |
 | `ThemeService` | Light / dark / system preference, persisted through `BrowserStorage`. |
 | `IDocsSource` | Loads the pre-built docs with `HttpClient` (only when the docs open). |
 | `BuildInfo` | Version, runtime, commit and build date for the footer. |
@@ -54,9 +55,11 @@ flowchart TD
     Layout --> Home["Home (/)"]
     Layout --> DocsPage["Docs (/docs/{slug})"]
     Layout --> Footer[AppFooter]
-    Home --> Board[GameBoard]
+    Home --> Board[GameBoard<br/>title = target, PageTitle]
     Board --> Toggle1[ThemeToggle]
     Board --> DocsLink[Docs button]
+    Board --> NewGame[NewGameButton<br/>split button, size menu, Custom… dialog]
+    Board --> Cells[BoardCells<br/>N² background cells]
     DocsPage --> Toggle2[ThemeToggle]
     DocsPage --> Sidebar[TOC sidebar + filter]
     DocsPage --> Content[Rendered Markdown]
@@ -72,6 +75,9 @@ Things that often need JS were solved in C# or CSS instead:
 
 - **Input:** `@onkeydown` on a focused element, `@ontouchstart` / `@ontouchend` with the swipe
   direction worked out in C#.
+- **Menus and dialogs:** the board size menu is the ARIA menu-button pattern in Razor: focus moves
+  with `ElementReference.FocusAsync`, click-outside is a transparent backdrop element, and
+  `@onkeydown:stopPropagation` keeps menu and dialog keys away from the board.
 - **Animations:** CSS transitions on `transform`, driven by tile ids and `@key` (see
   [Theming and animations](theming-and-animations.md)).
 - **Theme:** a `data-theme` attribute on a Blazor-rendered element plus CSS `light-dark()`.

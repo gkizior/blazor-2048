@@ -2,8 +2,8 @@
 
 **Input**: [spec.md](spec.md), [plan.md](plan.md)
 
-- [x] T001 Spec, plan and tasks — (spec commit)
-- [ ] T002 `scripts/app-icons.html`; regenerate favicon.png/.ico, apple-touch-icon, 192/512 and maskable icons
-- [ ] T003 Manifest maskable icons, `index.html` icon links, service-worker cache revision
-- [ ] T004 [P] Unit test: manifest icons exist at their declared sizes; `favicon.ico` sizes
+- [x] T001 Spec, plan and tasks — [`8a73bbc`](https://github.com/gkizior/blazor-2048/commit/8a73bbc)
+- [x] T002 `scripts/app-icons.html`; regenerate favicon.png/.ico, apple-touch-icon, 192/512 and maskable icons — [`7fb993c`](https://github.com/gkizior/blazor-2048/commit/7fb993c)
+- [x] T003 Manifest maskable icons, `index.html` icon links, service-worker cache revision — [`7fb993c`](https://github.com/gkizior/blazor-2048/commit/7fb993c)
+- [x] T004 [P] Unit test: manifest icons exist at their declared sizes; `favicon.ico` sizes — [`7fb993c`](https://github.com/gkizior/blazor-2048/commit/7fb993c)
 - [ ] T005 Verify the purple icons on the live site

@@ -7,8 +7,9 @@ All UI is Razor components in `src/Blazor2048`. They are small, and each one own
 | `App` | `App.razor` | Router. Unknown URLs fall back to the game. |
 | `MainLayout` | `Layout/MainLayout.razor` | Theme root (`data-theme`), `<meta name="theme-color">`, footer. |
 | `Home` | `Pages/Home.razor` | Route `/`, hosts `GameBoard`. |
-| `GameBoard` | `Components/GameBoard.razor` | The game: header, scores, board, tiles, overlays, input. |
-| `BoardCells` | `Components/BoardCells.razor` | The 16 empty background cells; renders once. |
+| `GameBoard` | `Components/GameBoard.razor` | The game: header (named after the target), scores, board, tiles, overlays, input, `PageTitle`. |
+| `NewGameButton` | `Components/NewGameButton.razor` | Split button: New Game at the current size, a caret with the size menu (4x4…10x10, Custom…) and the custom size dialog. |
+| `BoardCells` | `Components/BoardCells.razor` | The N² empty background cells; renders only when the size changes. |
 | `ThemeToggle` | `Components/ThemeToggle.razor` | Cycles System → Light → Dark. |
 | `AppFooter` | `Components/AppFooter.razor` | Author, version, .NET runtime, commit link, build date. |
 | `Docs` | `Pages/Docs.razor` | Routes `/docs` and `/docs/{slug}`: sidebar, content, outline. |
@@ -29,7 +30,7 @@ sequenceDiagram
     opt new best score
         Board->>Store: SaveAsync(best)
     end
-    Board-->>Player: re-render: tiles get new --r/--c, CSS slides them
+    Board-->>Player: re-render: moved tiles get a new inline transform, CSS slides them
 ```
 
 - **Keyboard:** the root `.game` element has `tabindex="0"` and `@onkeydown`. It focuses itself after
@@ -38,14 +39,56 @@ sequenceDiagram
 - **Touch:** `@ontouchstart` stores the start point, `@ontouchend` computes the direction in C#.
   Movements shorter than 24px are taps, not swipes. `@ontouchmove:preventDefault` and
   `touch-action: none` stop the page from scrolling or bouncing while you play.
-- **Rendering:** `BoardCells` draws the sixteen static `.cell` elements once. Tiles are drawn in a
-  separate `.tile-layer` from `Game.RenderTiles`, keyed by tile id, with a class fixed for each
-  tile's life. `ShouldRender` skips renders when nothing visible changed (no-op moves, other keys,
-  the completion of the best-score save). See
+- **Rendering:** `BoardCells` draws the N² static `.cell` elements and only re-renders when N
+  changes. Tiles are drawn in a separate `.tile-layer` from `Game.RenderTiles`, keyed per tile, with
+  a class fixed for each tile's life. Everything a render needs as text is cached: per size (each
+  cell's inline transform, the board's style and accessible name, the title) and per tile (class,
+  label, `data-*` values), so a render formats no strings. `ShouldRender` skips renders when nothing
+  visible changed (no-op moves, other keys, the completion of the best-score save). See
   [Theming and animations](theming-and-animations.md#rendering-cost).
-- **Overlays:** "Game over!" and "You win!" (with "Keep going") sit above the board.
+- **Board size:** on first render it loads the saved size (`BoardSizeStore`, 4x4 if none) and the
+  best score for that size; the board and title stay hidden until then, so a saved 8x8 never flashes
+  4x4 first. Choosing a size starts a new game at that size, saves it, loads that size's best and
+  puts focus back on the board.
+- **The name easter egg:** the game is named after its target tile, 2^(N+7), so the header title,
+  the document title (`<PageTitle>` in `GameBoard`), the hint ("get to 8192!"), the win message
+  ("You made 8192!") and the board's accessible name all follow the size. A size change mounts a new
+  title `<span>` (keyed by the target), whose `title-flip` animation turns the new number in once.
+  Long numbers shrink the title (`--digits`). The static loading screen, `index.html`'s initial
+  `<title>`, the manifest, the docs and the repo keep "2048"/"Blazor 2048".
+- **Overlays:** "Game over!" and "You made {target}!" (with "Keep going") sit above the board.
+- **Paused while choosing:** while the size menu or dialog is open, board keys and swipes are ignored.
 - **Input is never blocked.** There are no timers or "animation in progress" flags. A move during an
   animation is applied immediately; CSS retargets the tiles from wherever they are.
+
+## NewGameButton
+
+```mermaid
+stateDiagram-v2
+    accTitle: New Game split button states
+    [*] --> Closed
+    Closed --> Closed: main part clicked / new game at the current size
+    Closed --> Menu: caret clicked, Enter, Space, ArrowDown (focus checked item), ArrowUp (focus last)
+    Menu --> Menu: ArrowUp/ArrowDown (wrap), Home, End
+    Menu --> Closed: Escape (focus back to caret), Tab, click outside
+    Menu --> Closed: preset chosen / new game at that size
+    Menu --> Custom: Custom… chosen (focus the input)
+    Custom --> Custom: invalid N / inline error, aria-invalid
+    Custom --> Closed: valid N submitted / new N×N game
+    Custom --> Closed: Escape, Cancel, click outside (focus back to caret)
+```
+
+- **Markup:** the main `button.new-game` (accessible name "New Game, 6 by 6", with a visible `6×6`
+  badge) and the caret `#size-menu-button` (`aria-haspopup="menu"`, `aria-expanded`,
+  `aria-controls="size-menu"`). The menu is `ul[role=menu]` of `button[role=menuitemradio]` items
+  with `aria-checked` and a roving focus (`tabindex="-1"`, focus set in `OnAfterRenderAsync`).
+- **Custom…:** a `role="dialog"` with `aria-modal`; the text input (`inputmode="numeric"`) is
+  validated by `BoardSize.TryParse` on submit. Errors appear in a `role="alert"` paragraph linked with
+  `aria-describedby`, and the input gets `aria-invalid="true"`. A live preview shows "× N".
+- **No board moves:** every key handler in the menu and dialog uses `@onkeydown:stopPropagation`,
+  and `GameBoard` also ignores moves while `OnOpenChanged` says a menu or dialog is open.
+- **Cheap:** `ShouldRender` skips the renders that come from the board's per-move re-render unless
+  the size changed (its own events always render), so a move does not re-render the button.
 
 ## ThemeToggle and MainLayout
 

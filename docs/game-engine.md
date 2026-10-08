@@ -1,46 +1,95 @@
 # Game engine
 
-All rules live in `src/Game2048.Core/Game.cs`, a plain C# class with no UI dependencies, so it can be
-unit tested directly and reused by any front end.
+All rules live in `src/Game2048.Core/Game.cs` and `BoardSize.cs`, plain C# with no UI dependencies,
+so they can be unit tested directly and reused by any front end.
+
+## Board sizes
+
+Boards are always square, N×N ([spec 011](../specs/011-board-sizes/spec.md)). `BoardSize` holds the
+rules:
+
+| Member | Value |
+|---|---|
+| `Min` / `Max` | 2 and 16 (1×1 cannot move; 16 is the measured limit, see below) |
+| `Default` | 4 (the classic board, used when nothing is saved) |
+| `Presets` | 4…10, the sizes in the New Game menu |
+| `TryParse(text, out size, out error)` | Validates the Custom… input: whole numbers only, with a message for empty, too small (1, 0, negatives), too big, decimals and non-numbers |
+| `WinningTile(n)` | The target, 2^(N+7): 512 (2×2), 1024 (3×3), **2048 (4×4)**, 4096 … 131072 (10×10) … 8388608 (16×16) |
+
+The target is also the game's "name": the UI shows it wherever the classic game says 2048 (the easter
+egg). 2^(N+7) fits an `int` up to N = 23, so `WinningTile` cannot overflow at `Max`. A 2×2 board
+can never reach its 512 (its largest possible tile is 32) and 1024 is the largest tile a 3×3 board can
+hold, which is part of the joke.
+
+Why 16: the tile labels on a 390 px wide phone are the limit, not speed. Cells are about 26 px at
+12×12, 19.5 px at 16×16 and 15.6 px at 20×20; with compact labels (`16K`) 16×16 is still readable,
+20×20 is not. Performance at 16×16 after the optimizations below is within the spec's budget of 4×4
+(numbers in the [plan](../specs/011-board-sizes/plan.md)).
 
 ## State
 
 | Member | Meaning |
 |---|---|
-| `Board` | `int[size, size]`, `0` for empty cells. |
+| `Size` | N for an N×N board. `NewGame(n)` changes it. |
+| `this[row, col]` | The value at a cell, `0` for empty. |
+| `Board` | A copy of the board as `int[N, N]` (for tests and tools; it allocates). |
 | `Score` | Sum of every merged tile's value. |
-| `HasWon` / `KeepPlaying` | Reached 2048 / chose "Keep going". |
+| `WinningTile` | The target for this size (see above). |
+| `HasWon` / `KeepPlaying` | Reached the target / chose "Keep going". |
 | `IsGameOver` | No empty cells and no equal neighbours. |
-| `Tiles` | Live tiles with stable ids, ordered by id. |
+| `Tiles` | Live tiles with stable ids, ordered by id (a new list; for tests). |
 | `RetiredTiles` | Tiles merged away by the last move, positioned on their merge target. |
-| `RenderTiles` | `RetiredTiles` + `Tiles`, ordered by id. This is what the board draws. |
-| `MergedCells`, `SpawnedCells` | Cells changed by the last move (drive the pop and spawn animations). |
+| `RenderTiles` | `RetiredTiles` + live tiles, ordered by id. This is what the board draws; one reused list. |
+| `SpawnedCell` | Where the last random tile went. |
+
+## Memory layout
+
+Big boards made the engine's data structures matter, so a move allocates nothing:
+
+- Values, tile ids and per-cell flags (new / merged) are **flat arrays** indexed `row * N + col`.
+- A move reads each line into **reusable line buffers** (`_lineIndex`, `_lineValues`, …, length N),
+  runs `SlideLine` on spans, and writes into a **second set of arrays** that is swapped in when the
+  board changed. Nothing is copied back.
+- Retired tiles and the render list are two `List<Tile>` that are cleared and refilled; `Tile` is a
+  `readonly record struct`, so filling them does not allocate. The render list is rebuilt lazily,
+  once per change, and sorted in place with a cached comparison.
+- `AddRandomTile` counts empty cells and picks the k-th one (no list of empty cells); `CanMove` and the
+  win check run over the flat array (no LINQ).
+- Buffers are allocated only by `NewGame(n)` when N changes, and capacity grown for a big board is
+  trimmed when switching back down.
+
+`AllSizesTests.Moves_And_The_Render_List_Do_Not_Allocate` measures it with
+`GC.GetAllocatedBytesForCurrentThread()`: under one byte per move on 4×4, 10×10 and the largest
+board. The first, straightforward generalization (`int[,]`, LINQ, per-line arrays and lists) allocated
+3.7 KB per move on 4×4, 12.5 KB on 10×10 and 25.6 KB on 16×16, and was 3–5 times slower (a move plus
+building the render list, .NET 10 JIT: 10.3 → 1.4 µs on 4×4, 10.1 → 3.0 µs on 16×16).
 
 ## A move
 
 Every move is reduced to the same one-dimensional problem: slide one line toward index 0.
-`LineCells` lists a row or column in the order tiles travel, so **left, right, up and down share one
-implementation**.
+`FillLineIndex` lists a row or column's flat indexes in the order tiles travel, so **left, right, up
+and down share one implementation**, at any N.
 
 ```mermaid
 flowchart TD
     accTitle: Move and merge flow
     Start(Move direction) --> Over{Game over?}
     Over -- yes --> Ignore(Ignored)
-    Over -- no --> Lines[For each row/column:<br/>list cells in travel order]
-    Lines --> Slide[SlideCore: compact non-zero tiles,<br/>merge equal neighbours once]
+    Over -- no --> Lines[For each of the N rows/columns:<br/>flat indexes in travel order]
+    Lines --> Slide[SlideLine on reusable buffers: compact,<br/>merge equal neighbours once]
     Slide --> Track[Record where each tile went:<br/>keep id on slide, retire both halves on merge]
     Track --> Changed{Board changed?}
     Changed -- no --> NoOp("Return false, state untouched")
-    Changed -- yes --> Commit[Commit board, score, merged cells,<br/>fresh ids for merged tiles]
+    Changed -- yes --> Commit[Swap in the new arrays; score,<br/>fresh ids for merged tiles]
     Commit --> Spawn["Spawn a 2 (90%) or 4 (10%)<br/>in a random empty cell"]
-    Spawn --> Check["HasWon if any tile ≥ 2048<br/>IsGameOver = !CanMove()"]
+    Spawn --> Check["HasWon if a merge reached 2^(N+7)<br/>IsGameOver = !CanMove()"]
     Check --> Done(Return true)
 ```
 
 ### Merge rules
 
-`SlideRow` (public, used by tests) and the private `SlideCore` implement the classic rules:
+`SlideLine` (spans, no allocation; used by moves) and `SlideRow` (arrays; used by tests) implement
+the classic rules, for lines of any length:
 
 - Tiles slide as far as they can toward the edge.
 - Two equal tiles merge into one with double the value, and the score grows by that value.

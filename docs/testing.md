@@ -8,7 +8,7 @@ flowchart TB
     accTitle: Test pyramid
     E2E["E2E: Playwright for .NET<br/>published site in headless Chromium<br/>(few, slow, most realistic)"]
     Comp["Components: bUnit<br/>Razor components rendered in memory"]
-    Unit["Logic: xUnit<br/>engine rules, tile tracking, docs generator, palette contrast<br/>(many, fast)"]
+    Unit["Logic: xUnit<br/>engine at every board size, validation, allocations,<br/>tile tracking, docs generator, palette, icons<br/>(many, fast)"]
     E2E --- Comp --- Unit
 ```
 
@@ -20,6 +20,20 @@ Plain xUnit tests with no UI.
   load exact boards with `SetBoard` and check each direction, spawning, winning and game over.
 - **Tile tracking:** ids survive slides, merges retire both halves onto the target and create a new
   id, spawns are flagged, ids stay unique and ordered across many random moves.
+- **Every board size** (`AllSizesTests`, theory data 2…`BoardSize.Max`): a new game has two tiles,
+  a full line merges pairwise in all four directions, a checkerboard is game over and one pair
+  un-blocks it, the target 2^(N+7) wins and half of it doesn't. A property-style test plays 400
+  seeded random moves per size and checks each one against a reference implementation (the obvious
+  2D-array version built on `SlideRow`): same board except exactly one spawned 2 or 4 on an empty
+  cell, score grows by the merged values, ids unique and in order, one live tile per non-empty cell.
+- **Allocations:** after a warm-up, 2000 moves plus reading `RenderTiles` allocate under one byte
+  per move on 4x4, 10x10 and the largest board (`GC.GetAllocatedBytesForCurrentThread()`).
+- **Validation** (`BoardSizeTests`): `BoardSize.TryParse` accepts whole numbers 2…Max (spaces,
+  leading zeros, `+5`) and rejects 1, 0, negatives, decimals (`7.5`, `6,5`), words, empty input and
+  huge numbers, each with a message that names the allowed range; the targets 512…131072; no
+  overflow at the largest size.
+- **Icons** (`AppIconTests`): every manifest icon exists at its declared size, the maskable icons
+  are declared, `favicon.ico` holds 16/32/48 px images, and the service worker cache has a revision.
 - **Docs generator:** Markdown to HTML, Mermaid blocks to `<img>` pairs, link rewriting, headings,
   and that every doc in the repo is in the index.
 - **Palette:** parses `app.css` and checks every tile's text/background contrast is at least 4.5:1.
@@ -35,6 +49,16 @@ loading, the theme toggle cycling and setting `data-theme` on the layout root, t
 the footer's name and build info, the docs button, and the docs page (TOC, filter, rendered
 Markdown, diagrams, not-found) with a fake `IDocsSource`.
 
+Board sizes (`BoardSizeUiTests`): the split button's ARIA attributes; the menu's items, checked
+state and roving focus (which element `FocusAsync` targeted is checked against the `@ref` ids bUnit
+prints); ArrowUp/ArrowDown wrapping, Home/End, Escape returning focus to the caret, Tab and the
+backdrop closing it; board keys ignored while the menu or dialog is open; the Custom… dialog's
+inline errors (`role="alert"`, `aria-invalid`, `aria-describedby`) for 1, 0, -5, `abc`, `7.5`, empty
+and too big, and a valid 12; Cancel/Escape; the saved size restored and invalid saved sizes falling
+back to 4x4; best scores per size and the legacy 4x4 key migrated; the name easter egg (title,
+`PageTitle`, hint, accessible name, win message per size, the flip only on a size change); compact
+labels; and that moves re-render neither the button nor the cells.
+
 ## End-to-end tests: `tests/Blazor2048.E2ETests`
 
 [Playwright for .NET](https://playwright.dev/dotnet/) with `Microsoft.Playwright.Xunit.v3`:
@@ -46,6 +70,11 @@ Markdown, diagrams, not-found) with a fake `IDocsSource`.
 - Tests: app loads and focuses the board; arrow keys move tiles; the layout fits iPhone screens;
   dark mode persists across a reload; docs open and show a rendered Mermaid diagram; rapid key
   presses during animations are all applied; no console errors.
+- `BoardSizeE2ETests`: every preset (cells, title, tab title, hint, fits a 1280x800 window, focus
+  back on the board); the menu from the keyboard; click-outside; a custom 12x12; invalid custom input
+  rejected inline; the size and the per-size best surviving a reload; rapid input on a filled 10x10
+  board with no teleports or snaps; and a 10x10 board on a 390x844 phone that fits, has cells of at
+  least 24 px and moves on real touch swipes (CDP `Input.dispatchTouchEvent`).
 - `AnimationE2ETests` samples every tile's box and opacity once per frame (a test-side
   `requestAnimationFrame` loop; the app ships no such code) and asserts that merge sources reach
   the target before they are removed, the merged tile stays invisible until they arrive, rapid
@@ -63,7 +92,8 @@ Set `E2E_SITE_DIR` to test an existing publish folder (CI does this with the exa
 
 ## Animation performance
 
-`tools/PerfTrace` is a developer tool for measuring how the board animates. It
+`tools/PerfTrace` is a developer tool for measuring how the board animates, at any board size, and
+memory over long sessions. It
 drives a published site with Playwright for .NET and, for desktop, desktop with 4x CPU throttling
 and a 390x844 mobile viewport with 4x throttling, at two input paces (a key every 50 ms and every
 250 ms), it records:
@@ -72,7 +102,9 @@ and a 390x844 mobile viewport with 4x throttling, at two input paces (a key ever
   loadable in DevTools' Performance panel. From it: compositor frames dropped or presented
   (`PipelineReporter`), script time per keydown (Blazor's event handling, render and DOM patch),
   style, layout and paint time per move, and long tasks;
-- input-to-DOM latency (keydown to the first mutation of the tile layer);
+- input-to-DOM latency (keydown to the first mutation of the tile layer) and **key-to-paint**
+  (keydown to the start of the frame that paints the change: the first mutation schedules one
+  `requestAnimationFrame`);
 - a per-frame sample of every tile, used to count visual glitches: merge sources removed before
   arriving, merged tiles visible before their sources land, scale animations cut short, and
   slides that jump instead of animating.
@@ -85,12 +117,29 @@ dotnet run --project tools/PerfTrace -c Release -- --url http://127.0.0.1:8765/b
 dotnet run --project tools/PerfTrace -c Release -- --url https://gkizior.github.io/blazor-2048/ --label live --out perf-results
 ```
 
-Options: `--runs N` (default 2), `--moves N` (default 24), `--profiles desktop,desktop-4x,mobile-4x`.
+Options: `--runs N` (default 2), `--moves N` (default 24), `--profiles desktop,desktop-4x,mobile-4x`,
+`--paces rapid,paced`, and `--sizes 4,10,16` (default 4). For each size it seeds the app's saved
+size (`blazor2048.size`) before the page loads, then makes size² unthrottled warm-up moves that
+alternate left and right (row merges only, so tiles pile up) before measuring, so a big board is
+measured with dozens of tiles. The table has a size and a tiles column.
+
+`--memory` plays `--memory-moves` moves (default 600; a game over starts a new game) and then
+`--memory-games` new games (default 50) per size and profile, and samples, after a forced garbage
+collection (CDP `HeapProfiler.collectGarbage`), the JS heap and DOM node count
+(`Performance.getMetrics`) and the WebAssembly linear memory (`getDotnetRuntime(0).Module.HEAPU8.length`)
+every 50 moves and every 10 new games.
+
+```bash
+dotnet run --project tools/PerfTrace -c Release -- --url http://127.0.0.1:8765/blazor-2048/ --label sizes --out perf-results --runs 1 --paces rapid --sizes 4,6,8,10,16
+dotnet run --project tools/PerfTrace -c Release -- --url http://127.0.0.1:8765/blazor-2048/ --label sizes --out perf-results --memory --profiles desktop --sizes 4,10,16
+```
+
 It prints a Markdown table and writes `<label>.json` plus the traces to `--out` (`perf-results/`
 is git-ignored). It uses the same Playwright Chromium install as the E2E tests. CI builds it with the solution so it keeps compiling, but never runs it:
 the numbers depend on the machine, so compare runs from the same machine only.
 [Theming and animations](theming-and-animations.md#why-it-felt-choppy-and-how-it-was-measured)
-has the findings that led to the current animation design.
+has the findings that led to the current animation design, and
+[spec 011's plan](../specs/011-board-sizes/plan.md#measurements) the board size measurements.
 
 ## Running everything
 
