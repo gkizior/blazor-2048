@@ -44,8 +44,10 @@
     --tile-super-bg: linear-gradient(135deg, #d63384, #7b3fe4); --tile-super-fg: #ffffff;
 
     /* Motion */
-    --slide: 110ms;
-    --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+    --slide: 110ms;                               /* tile slide, like the original 2048's ~100ms */
+    --spawn: 150ms;                               /* new tile scale-in, after the slide */
+    --pop: 180ms;                                 /* merged tile pop, after the slide */
+    --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);   /* snappy: most of the distance in the first frames */
 
     --gap: clamp(6px, 2.4vmin, 14px);
     --radius: 10px;
@@ -235,13 +237,20 @@ a { color: var(--link); }
     color: var(--tile-fg);
 }
 
-/* Spawn and merge wait for the slide (animation-delay), then scale in/pop.
-   "backwards" keeps them at their first keyframe (hidden) during the delay. */
-.tile-new .tile-inner    { animation: tile-spawn 160ms var(--ease-out) var(--slide) backwards; }
-.tile-merged .tile-inner { animation: tile-pop 200ms ease-out calc(var(--slide) * 0.8) backwards; }
+/* Spawn and merge wait for the slide (animation-delay), then scale in / pop.
+   "backwards" holds the first keyframe (opacity 0) during the delay, so a merged tile stays hidden
+   while both of its sources slide in underneath it, and a new tile only appears once the board has
+   settled. The class that starts each animation is fixed for the tile's life (GameBoard.ClassFor),
+   so a fast next move retargets the slide but never cancels or restarts a scale animation. */
+.tile-new .tile-inner    { animation: tile-spawn var(--spawn) var(--ease-out) var(--slide) backwards; }
+.tile-merged .tile-inner { animation: tile-pop var(--pop) ease-out var(--slide) backwards; }
 
-@keyframes tile-spawn { from { transform: scale(0.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-@keyframes tile-pop   { 0% { transform: scale(0.6); } 55% { transform: scale(1.14); } 100% { transform: scale(1); } }
+@keyframes tile-spawn { from { transform: scale(0.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes tile-pop {
+    0%   { transform: scale(0.5);  opacity: 0; }
+    45%  { transform: scale(1.12); opacity: 1; }
+    100% { transform: scale(1);    opacity: 1; }
+}
 
 .tile-2     { --tile-bg: var(--tile-2-bg);     --tile-fg: var(--tile-2-fg); }
 .tile-4     { --tile-bg: var(--tile-4-bg);     --tile-fg: var(--tile-4-fg); }

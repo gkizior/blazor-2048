@@ -1,0 +1,12 @@
+@* The board's empty cells. They never change, and with only an unchanged primitive parameter
+   Blazor skips re-rendering this component when GameBoard re-renders. *@
+@for (var i = 0; i < Count; i++)
+{
+    <div class="cell"></div>
+}
+
+@code {
+    [Parameter] public int Count { get; set; } = 16;
+
+    protected override bool ShouldRender() => false; // only the first render is needed
+}

@@ -10,6 +10,7 @@ run in the browser; GitHub Pages only serves files. There is no server code and 
 | `src/Game2048.Core` | Class library | Pure C# game rules. No Blazor or browser dependencies. |
 | `src/Blazor2048` | Blazor WebAssembly PWA | Components, theming, docs viewer, service worker. |
 | `tools/DocsBuilder` | Console tool (build time only) | Turns the repo's Markdown into HTML for the docs viewer and pre-renders Mermaid diagrams. |
+| `tools/PerfTrace` | Console tool (developer only) | Records Chromium traces and per-frame tile samples of the board to measure animation smoothness. |
 | `tests/Blazor2048.Tests` | xUnit v3 | Engine rules, tile tracking, docs generator. |
 | `tests/Blazor2048.ComponentTests` | xUnit v3 + bUnit | Components rendered in memory. |
 | `tests/Blazor2048.E2ETests` | xUnit v3 + Playwright for .NET | The published site in headless Chromium. |

@@ -45,6 +45,33 @@ public partial class ThemePaletteTests
         Assert.Contains("prefers-reduced-motion: reduce", Css);
     }
 
+    [Fact]
+    public void Tile_Motion_Uses_Only_Transform_And_Opacity()
+    {
+        // Slides transition transform; spawn and pop keyframes touch only transform and opacity, so
+        // every tile animation can run on the compositor.
+        Assert.Matches(@"\.tile\s*\{[^}]*transition:\s*transform var\(--slide\)", Css);
+
+        // Spawn and pop start when the slide ends and hold an invisible first frame until then, so a
+        // merged tile never shows up on top of its still-sliding sources.
+        Assert.Matches(@"\.tile-new \.tile-inner\s*\{\s*animation: tile-spawn var\(--spawn\) \S+ var\(--slide\) backwards", Css);
+        Assert.Matches(@"\.tile-merged \.tile-inner\s*\{\s*animation: tile-pop var\(--pop\) \S+ var\(--slide\) backwards", Css);
+        Assert.Matches(@"@keyframes tile-spawn\s*\{\s*from\s*\{[^}]*opacity:\s*0", Css);
+        Assert.Matches(@"@keyframes tile-pop\s*\{\s*0%\s*\{[^}]*opacity:\s*0", Css);
+        foreach (var name in new[] { "tile-spawn", "tile-pop" })
+        {
+            var start = Css.IndexOf($"@keyframes {name}", StringComparison.Ordinal);
+            Assert.True(start >= 0, name);
+            var (open, depth, end) = (Css.IndexOf('{', start), 0, -1);
+            for (var i = open; i < Css.Length && end < 0; i++)
+                if (Css[i] == '{') depth++;
+                else if (Css[i] == '}' && --depth == 0) end = i;
+            var body = Css[open..end];
+            var properties = System.Text.RegularExpressions.Regex.Matches(body, @"([a-z-]+)\s*:(?!\s*[^;]*\{)").Select(m => m.Groups[1].Value).Distinct();
+            Assert.All(properties, p => Assert.Contains(p, new[] { "transform", "opacity" }));
+        }
+    }
+
     /// <summary>[light colors, dark colors] for a custom property (gradients yield several colors).</summary>
     private static List<string>[] Colors(string property)
     {

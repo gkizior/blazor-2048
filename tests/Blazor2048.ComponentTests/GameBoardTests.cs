@@ -237,10 +237,111 @@ public class GameBoardTests : AppTestContext
         Assert.All(retired, t => Assert.Contains("--c:0", t.GetAttribute("style")));
         Assert.Single(cut.FindAll(".tile.tile-new"));
 
-        // The next move drops the retired halves and the animation flags.
+        // The next move drops the retired halves. The merged tile keeps its class (same element,
+        // same class), so its pop animation is never restarted or cut short by the move.
+        var mergedId = merged.GetAttribute("data-id");
+        var mergedClass = merged.ClassName;
         cut.Find(".game").KeyDown(new KeyboardEventArgs { Key = "ArrowDown" });
         Assert.Empty(cut.FindAll(".tile.tile-retired"));
-        Assert.Empty(cut.FindAll(".tile.tile-merged"));
+        var mergedAfter = cut.Find($".tile[data-id='{mergedId}']");
+        Assert.Equal(mergedClass, mergedAfter.ClassName);
+        Assert.Contains("--r:3", mergedAfter.GetAttribute("style"));
+    }
+
+    [Fact]
+    public void Merge_Sources_Keep_Their_Elements_And_Slide_Into_The_Target()
+    {
+        game.SetBoard(new int[,]
+        {
+            { 0, 2, 0, 2 },
+            { 0, 0, 0, 0 },
+            { 0, 0, 0, 0 },
+            { 0, 0, 0, 0 },
+        });
+        var cut = Render<GameBoard>();
+        var sourceIds = cut.FindAll(".tile.tile-2").Select(t => t.GetAttribute("data-id")).Order().ToArray();
+
+        cut.Find(".game").KeyDown(new KeyboardEventArgs { Key = "ArrowLeft" });
+
+        // Both halves are still rendered under their original keys (so the browser slides the same
+        // elements), now targeting the merge cell, beneath the new tile.
+        var retired = cut.FindAll(".tile.tile-retired");
+        Assert.Equal(sourceIds, retired.Select(t => t.GetAttribute("data-id")).Order().ToArray());
+        Assert.All(retired, t => Assert.Contains("--r:0;--c:0", t.GetAttribute("style")));
+        var merged = cut.Find(".tile.tile-merged");
+        Assert.Contains("--r:0;--c:0", merged.GetAttribute("style"));
+        Assert.DoesNotContain(merged.GetAttribute("data-id"), sourceIds);
+    }
+
+    [Fact]
+    public void Animation_Classes_Are_Fixed_For_A_Tiles_Life()
+    {
+        game.SetBoard(new int[,]
+        {
+            { 2, 0, 0, 0 },
+            { 0, 0, 0, 0 },
+            { 0, 0, 0, 0 },
+            { 0, 0, 0, 0 },
+        });
+        var cut = Render<GameBoard>();
+        var root = cut.Find(".game");
+
+        root.KeyDown(new KeyboardEventArgs { Key = "ArrowRight" });
+        var spawned = cut.Find(".tile.tile-new");
+        var (id, css) = (spawned.GetAttribute("data-id"), spawned.ClassName);
+
+        // Whatever the next moves do, the spawned tile's class (and so its CSS animation) is unchanged.
+        foreach (var key in new[] { "ArrowDown", "ArrowLeft", "ArrowUp" })
+        {
+            root.KeyDown(new KeyboardEventArgs { Key = key });
+            if (cut.FindAll($".tile[data-id='{id}']:not(.tile-retired)") is [var tile])
+                Assert.Equal(css, tile.ClassName);
+        }
+    }
+
+    [Fact]
+    public void Only_Moves_That_Change_The_Board_Render()
+    {
+        game.SetBoard(new int[,]
+        {
+            { 2, 0, 0, 0 },
+            { 0, 0, 0, 0 },
+            { 0, 0, 0, 0 },
+            { 0, 0, 0, 0 },
+        });
+        var cut = Render<GameBoard>();
+        var root = cut.Find(".game");
+        var renders = cut.RenderCount;
+
+        root.KeyDown(new KeyboardEventArgs { Key = "ArrowLeft" }); // already at the left edge: no-op
+        root.KeyDown(new KeyboardEventArgs { Key = "ArrowUp" });   // no-op
+        root.KeyDown(new KeyboardEventArgs { Key = "x" });         // not a game key
+        Assert.Equal(renders, cut.RenderCount);
+
+        root.KeyDown(new KeyboardEventArgs { Key = "ArrowRight" });
+        Assert.Equal(renders + 1, cut.RenderCount);
+    }
+
+    [Fact]
+    public void A_Scoring_Move_Renders_Once_And_Never_Rerenders_The_Static_Cells()
+    {
+        game.SetBoard(new int[,]
+        {
+            { 2, 2, 0, 0 },
+            { 0, 0, 0, 0 },
+            { 0, 0, 0, 0 },
+            { 0, 0, 0, 0 },
+        });
+        var cut = Render<GameBoard>();
+        var renders = cut.RenderCount;
+
+        // Scoring also saves the best score (an awaited JS interop call); that must not cost a second render.
+        cut.Find(".game").KeyDown(new KeyboardEventArgs { Key = "ArrowLeft" });
+
+        Assert.Equal("4", Score(cut));
+        Assert.Equal(renders + 1, cut.RenderCount);
+        Assert.Equal(1, cut.FindComponent<BoardCells>().RenderCount);
+        Assert.Equal(16, cut.FindAll(".board .cell").Count);
     }
 
     [Fact]

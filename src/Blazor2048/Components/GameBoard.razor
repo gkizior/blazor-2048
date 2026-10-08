@@ -30,18 +30,17 @@
     </div>
 
     <div class="board" aria-label="2048 board" data-moves="@moves">
-        @for (var i = 0; i < game.Size * game.Size; i++)
-        {
-            <div class="cell"></div>
-        }
+        @* The 16 background cells never change, so they live in a child component that is not re-rendered. *@
+        <BoardCells Count="@(game.Size * game.Size)" />
 
-        @* Tiles live in one flat, id-ordered list keyed by tile id. Moving a tile only changes its
-           --r/--c custom properties, so CSS transitions slide it; merges and spawns are new
-           elements whose scale animation plays once. No timers: a new move simply retargets. *@
+        @* Tiles live in one flat, id-ordered list keyed by tile id, so Blazor only inserts and removes
+           elements and never reorders them. Moving a tile only changes its --r/--c custom properties,
+           so the CSS transition retargets from wherever the tile is. A tile's class is fixed for its
+           whole life (see ClassFor), so a spawn or pop animation is never cut short by the next move. *@
         <div class="tile-layer">
             @foreach (var tile in game.RenderTiles)
             {
-                <div @key="tile.Id" class="@TileCss(tile)" style="--r:@tile.Row;--c:@tile.Col"
+                <div @key="tile.Id" class="@ClassFor(tile)" style="@PositionStyle(tile)"
                      data-id="@tile.Id" data-row="@tile.Row" data-col="@tile.Col" data-value="@tile.Value">
                     <div class="tile-inner">@tile.Value</div>
                 </div>
@@ -73,10 +72,31 @@
 @code {
     private const double MinSwipeDistance = 24;
 
+    // "--r:R;--c:C" for every cell, built once: no per-render string formatting.
+    private static readonly string[] Positions =
+        Enumerable.Range(0, 16).Select(i => $"--r:{i / 4};--c:{i % 4}").ToArray();
+
     private ElementReference gameRoot;
     private int best;
     private int moves; // successful moves this session (exposed as data-moves for E2E checks)
     private (double X, double Y)? touchStart;
+
+    // Class per tile id, decided when the tile first appears and then kept: "tile-new"/"tile-merged"
+    // start their CSS animation once, and an unchanged class means the next move cannot restart or
+    // cancel it. Entries for tiles that are gone are pruned after each move.
+    private readonly Dictionary<int, string> tileClasses = new();
+    private readonly Dictionary<int, string> retiredClasses = new();
+
+    // Render only when something visible changed: no-op moves, other keys and the re-render Blazor
+    // would do after the awaited best-score save are skipped.
+    private bool dirty; // the first render always happens; later ones need a change
+
+    protected override bool ShouldRender()
+    {
+        if (!dirty) return false;
+        dirty = false;
+        return true;
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -86,7 +106,13 @@
         await gameRoot.FocusAsync(preventScroll: true);
 
         best = await BestScores.LoadAsync();
-        if (best > 0) StateHasChanged();
+        if (best > 0) Invalidate();
+    }
+
+    private void Invalidate()
+    {
+        dirty = true;
+        StateHasChanged();
     }
 
     private async Task OnKeyDown(KeyboardEventArgs e)
@@ -131,26 +157,55 @@
         if (game.HasWon && !game.KeepPlaying) return; // waiting on the win dialog
         if (!game.Move(dir)) return;
         moves++;
+        dirty = true;
+        PruneTileClasses();
 
         if (game.Score > best)
         {
             best = game.Score;
+            // The board is already rendered when this awaits; the save does not need another render.
             await BestScores.SaveAsync(best);
         }
     }
 
-    private void NewGame() => game.NewGame();
-
-    private void KeepGoing() => game.Continue();
-
-    private static string TileCss(Tile tile)
+    private void NewGame()
     {
-        var css = $"tile {TileClass(tile.Value)}";
-        if (tile.IsRetired) return css + " tile-retired";
-        if (tile.IsMerged) return css + " tile-merged";
-        if (tile.IsNew) return css + " tile-new";
-        return css;
+        game.NewGame();
+        tileClasses.Clear();
+        retiredClasses.Clear();
+        dirty = true;
     }
+
+    private void KeepGoing()
+    {
+        game.Continue();
+        dirty = true;
+    }
+
+    private string ClassFor(Tile tile)
+    {
+        if (!tileClasses.TryGetValue(tile.Id, out var css))
+        {
+            css = $"tile {TileClass(tile.Value)}" + (tile.IsMerged ? " tile-merged" : tile.IsNew ? " tile-new" : "");
+            tileClasses[tile.Id] = css;
+        }
+        if (!tile.IsRetired) return css;
+
+        if (!retiredClasses.TryGetValue(tile.Id, out var retired))
+            retiredClasses[tile.Id] = retired = css + " tile-retired";
+        return retired;
+    }
+
+    private void PruneTileClasses()
+    {
+        if (tileClasses.Count <= 2 * game.Size * game.Size) return; // prune in batches, not every move
+        var alive = game.RenderTiles.Select(t => t.Id).ToHashSet();
+        foreach (var id in tileClasses.Keys.Where(id => !alive.Contains(id)).ToList()) tileClasses.Remove(id);
+        foreach (var id in retiredClasses.Keys.Where(id => !alive.Contains(id)).ToList()) retiredClasses.Remove(id);
+    }
+
+    private string PositionStyle(Tile tile) =>
+        game.Size == 4 ? Positions[tile.Row * 4 + tile.Col] : $"--r:{tile.Row};--c:{tile.Col}";
 
     private static string TileClass(int value) => value <= 2048 ? $"tile-{value}" : "tile-super";
 }

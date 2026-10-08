@@ -8,6 +8,7 @@ All UI is Razor components in `src/Blazor2048`. They are small, and each one own
 | `MainLayout` | `Layout/MainLayout.razor` | Theme root (`data-theme`), `<meta name="theme-color">`, footer. |
 | `Home` | `Pages/Home.razor` | Route `/`, hosts `GameBoard`. |
 | `GameBoard` | `Components/GameBoard.razor` | The game: header, scores, board, tiles, overlays, input. |
+| `BoardCells` | `Components/BoardCells.razor` | The 16 empty background cells; renders once. |
 | `ThemeToggle` | `Components/ThemeToggle.razor` | Cycles System → Light → Dark. |
 | `AppFooter` | `Components/AppFooter.razor` | Author, version, .NET runtime, commit link, build date. |
 | `Docs` | `Pages/Docs.razor` | Routes `/docs` and `/docs/{slug}`: sidebar, content, outline. |
@@ -37,9 +38,11 @@ sequenceDiagram
 - **Touch:** `@ontouchstart` stores the start point, `@ontouchend` computes the direction in C#.
   Movements shorter than 24px are taps, not swipes. `@ontouchmove:preventDefault` and
   `touch-action: none` stop the page from scrolling or bouncing while you play.
-- **Rendering:** sixteen static `.cell` elements draw the grid. Tiles are drawn in a separate
-  `.tile-layer` from `Game.RenderTiles`, keyed by tile id. See
-  [Theming and animations](theming-and-animations.md).
+- **Rendering:** `BoardCells` draws the sixteen static `.cell` elements once. Tiles are drawn in a
+  separate `.tile-layer` from `Game.RenderTiles`, keyed by tile id, with a class fixed for each
+  tile's life. `ShouldRender` skips renders when nothing visible changed (no-op moves, other keys,
+  the completion of the best-score save). See
+  [Theming and animations](theming-and-animations.md#rendering-cost).
 - **Overlays:** "Game over!" and "You win!" (with "Keep going") sit above the board.
 - **Input is never blocked.** There are no timers or "animation in progress" flags. A move during an
   animation is applied immediately; CSS retargets the tiles from wherever they are.

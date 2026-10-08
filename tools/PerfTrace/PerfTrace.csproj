@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Animation performance probe (developer tool: built with the solution so it keeps compiling, never shipped or run in CI).
+    Drives the published site with Playwright for .NET, records a Chromium performance trace
+    plus in-page frame timing, and reports dropped frames, long tasks, style/layout/paint work,
+    per-move Blazor time and visual glitches (merge sources cut off, pops before arrival, snaps).
+    See docs/testing.md ("Animation performance").
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Playwright" Version="1.63.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Instrumentation.js" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

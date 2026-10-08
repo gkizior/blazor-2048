@@ -46,6 +46,10 @@ Markdown, diagrams, not-found) with a fake `IDocsSource`.
 - Tests: app loads and focuses the board; arrow keys move tiles; the layout fits iPhone screens;
   dark mode persists across a reload; docs open and show a rendered Mermaid diagram; rapid key
   presses during animations are all applied; no console errors.
+- `AnimationE2ETests` samples every tile's box and opacity once per frame (a test-side
+  `requestAnimationFrame` loop; the app ships no such code) and asserts that merge sources reach
+  the target before they are removed, the merged tile stays invisible until they arrive, rapid
+  input never snaps a spawn/pop animation, and retargeted slides never jump.
 
 E2E tests are opt-in locally because they need a browser:
 
@@ -56,6 +60,37 @@ RUN_E2E=1 dotnet test --project tests/Blazor2048.E2ETests
 ```
 
 Set `E2E_SITE_DIR` to test an existing publish folder (CI does this with the exact files it deploys).
+
+## Animation performance
+
+`tools/PerfTrace` is a developer tool for measuring how the board animates. It
+drives a published site with Playwright for .NET and, for desktop, desktop with 4x CPU throttling
+and a 390x844 mobile viewport with 4x throttling, at two input paces (a key every 50 ms and every
+250 ms), it records:
+
+- a **Chromium performance trace** over CDP (`Tracing.start`), saved as `*.trace.json` and
+  loadable in DevTools' Performance panel. From it: compositor frames dropped or presented
+  (`PipelineReporter`), script time per keydown (Blazor's event handling, render and DOM patch),
+  style, layout and paint time per move, and long tasks;
+- input-to-DOM latency (keydown to the first mutation of the tile layer);
+- a per-frame sample of every tile, used to count visual glitches: merge sources removed before
+  arriving, merged tiles visible before their sources land, scale animations cut short, and
+  slides that jump instead of animating.
+
+```bash
+dotnet publish src/Blazor2048 -c Release -o /tmp/site
+python3 scripts/prepare-pages.py /tmp/site/wwwroot /blazor-2048/
+# serve /tmp/site/wwwroot under /blazor-2048/ (any static server), then:
+dotnet run --project tools/PerfTrace -c Release -- --url http://127.0.0.1:8765/blazor-2048/ --label local --out perf-results
+dotnet run --project tools/PerfTrace -c Release -- --url https://gkizior.github.io/blazor-2048/ --label live --out perf-results
+```
+
+Options: `--runs N` (default 2), `--moves N` (default 24), `--profiles desktop,desktop-4x,mobile-4x`.
+It prints a Markdown table and writes `<label>.json` plus the traces to `--out` (`perf-results/`
+is git-ignored). It uses the same Playwright Chromium install as the E2E tests. CI builds it with the solution so it keeps compiling, but never runs it:
+the numbers depend on the machine, so compare runs from the same machine only.
+[Theming and animations](theming-and-animations.md#why-it-felt-choppy-and-how-it-was-measured)
+has the findings that led to the current animation design.
 
 ## Running everything
 
