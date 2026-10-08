@@ -28,12 +28,18 @@ Third follow-up (secret tiny boards, 2026-10-08, after board sizes shipped in `7
 >
 > Where you just win right away
 
-**History of the lower bound.** The original request said "Don't do 1x1 tho or 0 or neg", so the
-first version rejected 1, 0 and negatives. The third follow-up reverses that **for 1 and 0 only**:
-they become Custom-only easter eggs that win instantly. Negatives, decimals and text are still
-rejected, the playable range stays 2 to 16, and the preset menu does not change.
+Fourth follow-up (2026-10-08, while the third was being delivered), verbatim:
 
-- **Source**: Message from Garrett, relayed to the implementing assistant (request and three follow-ups)
+> Maybe not zero still but 1 should just win immediately
+
+**History of the lower bound.** The original request said "Don't do 1x1 tho or 0 or neg", so the
+first version (`7630ee7`) rejected 1, 0 and negatives. The third follow-up reversed that for 1 and
+0, and a 1x1 and a 0x0 instant win were built (`56a90c4`…`381018b`). The fourth follow-up narrows
+it to **1 only**: 1x1 is the Custom-only easter egg that wins instantly; 0 is rejected again, with
+negatives, decimals and text. Custom… therefore accepts 1 to 16, the playable range stays 2 to 16,
+and the preset menu does not change.
+
+- **Source**: Message from Garrett, relayed to the implementing assistant (request and four follow-ups)
 - **Date**: 2026-10-08
 
 The relayed task added these requirements (condensed): a split button (main part = new game at the
@@ -50,7 +56,9 @@ target, while the repo name, PWA manifest and static docs stay "Blazor 2048". Th
 was relayed with: Custom… accepts 0 and 1, and starting either is an immediate, funny and tasteful
 win (1x1: a single tile that is already the target, 2^(1+7) = 256; 0x0: an empty board, a name such
 as 128 = 2^7, and a message like "You won by not playing."); no crashes or moves at 0 or 1 cells;
-no best score for them and no instant win restored on reload; Custom-only (not in the menu).
+no best score for them and no instant win restored on reload; Custom-only (not in the menu). The
+fourth follow-up was relayed as: allow only 1 (1x1, target 256); 0 stays rejected along with
+negatives, decimals and text, so the valid custom range is 1 to 16; drop the 0x0 work.
 
 ## User Scenarios & Testing
 
@@ -119,21 +127,22 @@ The easter egg: the game's "name" is the tile you are playing for, so a 6x6 game
 4. **Given** a 10x10 game on a phone, **When** the header shows 131072, **Then** the title shrinks to fit next to the scores.
 5. **Given** a reload with 6x6 saved, **When** the page loads, **Then** the title says 8192 without first flashing 2048.
 
-### User Story 7 - Secret tiny boards: 1x1 and 0x0 win right away (Priority: P3)
+### User Story 7 - The secret 1x1 board wins right away (Priority: P3)
 
-The third follow-up: two sizes nobody would pick on purpose, hidden behind Custom…, that you win
-without playing.
+The third and fourth follow-ups: a size nobody would pick on purpose, hidden behind Custom…, that
+you win without playing. (0x0 was briefly part of this story and was dropped by the fourth
+follow-up.)
 
-**Independent Test**: Choose Custom…, enter 1, start; then enter 0, start.
+**Independent Test**: Choose Custom…, enter 1, start; then enter 0 and see the error.
 
 **Acceptance Scenarios**:
 
 1. **Given** the Custom… dialog, **When** `1` is entered, **Then** a 1x1 board appears holding one tile that is already the target, 256 (2^(1+7)); the name (header, tab title, hint, board label) becomes 256 and a win screen says so right away, in zero moves.
-2. **Given** the Custom… dialog, **When** `0` is entered, **Then** an empty board appears, the name becomes 128 (2^(0+7)) and the win screen says "You won by not playing."
-3. **Given** either win screen, **When** keys are pressed or the board is swiped, **Then** nothing moves and nothing breaks; the screen offers to play the tiny board again or go back to the last real size.
-4. **Given** a 1x1 or 0x0 game, **When** the page is reloaded, **Then** the game starts at the last real size (2 to 16, or 4x4 if none), not at the instant win.
-5. **Given** a 1x1 or 0x0 game, **Then** no best score is saved or shown for it, and the real sizes' bests are untouched.
-6. **Given** the New Game menu, **Then** it still lists only 4x4 … 10x10 and Custom…; the dialog still describes the range as 2 to 16 (the tiny boards stay a secret).
+2. **Given** the Custom… dialog, **When** `0` is entered, **Then** no game starts and an inline message says a 0x0 board is not available and names the valid range.
+3. **Given** the 1x1 win screen, **When** keys are pressed or the board is swiped, **Then** nothing moves and nothing breaks; the screen offers to play the tiny board again or go back to the last real size.
+4. **Given** a 1x1 game, **When** the page is reloaded, **Then** the game starts at the last real size (2 to 16, or 4x4 if none), not at the instant win.
+5. **Given** a 1x1 game, **Then** no best score is saved or shown for it, and the real sizes' bests are untouched.
+6. **Given** the New Game menu, **Then** it still lists only 4x4 … 10x10 and Custom…; the dialog still describes the range as 2 to 16 (the 1x1 board stays a secret).
 
 ### Edge Cases
 
@@ -147,11 +156,9 @@ without playing.
 - Changing size during a game simply starts a new game; the old game is not saved.
 - Storage unavailable (private mode): sizes and bests still work for the session.
 - A saved size outside the valid range (edited by hand), including 0 or 1: fall back to 4x4.
-- 0x0 has no cells: the engine must not divide by N or index an empty array (spawn, moves, game over
-  and the render list all handle zero cells), and the CSS sizing must not divide by zero (the empty
-  board takes the size of a 1x1 board).
-- `-0` is not a size anyone means: like any input with a minus sign it is rejected, so only a plain
-  `0` opens the empty board.
+- 1x1 has one cell and no possible move: spawn, moves, game over and the render list must handle a
+  single cell, and nothing may divide by N - 1.
+- `0`, `00` and `-0` are rejected (no 0x0 board); the engine refuses size 0.
 
 ## Requirements
 
@@ -159,7 +166,7 @@ without playing.
 
 - **FR-001**: The New Game control MUST be a split button: main part = new game at the current size; caret = menu with 4x4 (classic), 5x5 … 10x10 and Custom….
 - **FR-002**: The menu MUST use `aria-haspopup="menu"`, `aria-expanded`, `role="menu"` and `role="menuitemradio"` with `aria-checked`; support ArrowUp/ArrowDown/Home/End, Enter/Space, Escape (focus back to the caret), Tab and click-outside to close.
-- **FR-003**: Custom… MUST accept a single N (boards are always N×N). Valid N: whole numbers from 2 to `BoardSize.Max`, plus the secret sizes 0 and 1 (FR-015). Anything else (negatives, decimals, text, empty, above the maximum) MUST be rejected with an inline message (`role="alert"`, `aria-invalid`).
+- **FR-003**: Custom… MUST accept a single N (boards are always N×N). Valid N: whole numbers from 2 to `BoardSize.Max`, plus the secret size 1 (FR-015), so Custom… accepts 1 to 16. Anything else (0, negatives, decimals, text, empty, above the maximum) MUST be rejected with an inline message (`role="alert"`, `aria-invalid`).
 - **FR-004**: `BoardSize.Max` MUST be chosen from measurements (readability on a phone, and PerfTrace timings), recorded in [plan.md](plan.md).
 - **FR-005**: The default size MUST be 4x4 when nothing is saved.
 - **FR-006**: The engine MUST support every N from 2 to `MaxSize` (moves, merges, spawn, game over, win), using flat arrays and reusable buffers: no LINQ or per-line allocations on the move path.
@@ -171,8 +178,8 @@ without playing.
 - **FR-012**: Nothing may grow without bound across moves or new games (tile class caches, retired tiles, event handlers).
 - **FR-013**: Every visible "2048" in the game UI (header title, document title via `PageTitle`, hint, win message, board accessible name) MUST show the current target and update when the size changes. The repository name, PWA manifest, in-app and static docs keep the name "Blazor 2048"/"2048 Docs"; the easter egg is documented in the docs.
 - **FR-014**: A subtle touch is allowed if tasteful: the title number flips in when the size changes (no motion with `prefers-reduced-motion`).
-- **FR-015**: Sizes 0 and 1 (`BoardSize.IsSecret`) MUST start an instant win: 1x1 holds one tile equal to its target (256), 0x0 is empty (target 128); `HasWon` is set at once, no tile spawns, no move succeeds. The win screen MUST have its own tasteful wording and offer "Play again" and a way back to the last real size, without "Keep going".
-- **FR-016**: Secret sizes MUST NOT be saved as the last size or get a best score; a reload starts the last real size. They MUST NOT appear in the preset menu, and the dialog's range text stays "2 to 16".
+- **FR-015**: Size 1 (`BoardSize.IsSecret`) MUST start an instant win: the 1x1 board holds one tile equal to its target (256); `HasWon` is set at once, no tile spawns, no move succeeds. The win screen MUST have its own tasteful wording and offer "Play again" and a way back to the last real size, without "Keep going".
+- **FR-016**: The secret size MUST NOT be saved as the last size or get a best score; a reload starts the last real size. It MUST NOT appear in the preset menu, and the dialog's range text stays "2 to 16".
 
 ## Success Criteria
 
@@ -182,7 +189,7 @@ without playing.
 - **SC-004**: All suites green: engine tests for every size 2…MaxSize, bUnit tests for the split button, menu, dialog and validation, and Playwright tests for presets, custom, invalid input, persistence and 10x10 rapid input.
 - **SC-005**: Deployed and verified on the live site, including a phone viewport.
 - **SC-006**: bUnit and Playwright tests show the name following the size (title, tab title, hint, win message) and persisting across a reload.
-- **SC-007**: xUnit, bUnit and Playwright tests cover 0 and 1 (instant win, name, no moves, no crash, not persisted, not in the menu) and confirm `-1` and `1.5` are still rejected.
+- **SC-007**: xUnit, bUnit and Playwright tests cover 1 (instant win, name, no moves, no crash, not persisted, not in the menu) and confirm `0`, `-1` and `1.5` are rejected.
 
 ## Assumptions
 

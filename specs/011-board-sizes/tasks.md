@@ -38,5 +38,11 @@
 - [x] T015 Engine: sizes 0 and 1 (`BoardSize.IsSecret`), instant win, zero-cell guards, target 2^(N+7) from N = 0 — [`56a90c4`](https://github.com/gkizior/blazor-2048/commit/56a90c4)
 - [x] T016 UI: Custom… accepts 0 and 1; tiny-board win screens; not saved as last size, no best; empty board layout — [`e431a63`](https://github.com/gkizior/blazor-2048/commit/e431a63)
 - [x] T017 [P] Tests: xUnit engine and validation, bUnit dialog and win screens, Playwright 0, 1, -1 and 1.5 — [`56a90c4`](https://github.com/gkizior/blazor-2048/commit/56a90c4), [`e431a63`](https://github.com/gkizior/blazor-2048/commit/e431a63), [`9a7c26f`](https://github.com/gkizior/blazor-2048/commit/9a7c26f)
-- [x] T018 Docs: easter egg section, BoardSize table — (docs commit)
-- [ ] T019 Deploy verified live; screenshots of both win screens
+- [x] T018 Docs: easter egg section, BoardSize table — [`381018b`](https://github.com/gkizior/blazor-2048/commit/381018b)
+
+## Phase 7: Only 1x1 (fourth follow-up)
+
+- [x] T020 Spec update: "Maybe not zero still but 1 should just win immediately"; 0x0 dropped — (spec update commit)
+- [ ] T021 Engine and UI: 1 is the only secret size; 0 rejected again; 0x0 code removed
+- [ ] T022 [P] Tests: 0 and -1 rejected, 1 an instant win (xUnit, bUnit, Playwright)
+- [ ] T023 Docs updated; deploy verified live; 1x1 screenshot
