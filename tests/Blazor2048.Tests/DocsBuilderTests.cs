@@ -55,6 +55,31 @@ public sealed class DocsBuilderTests : IDisposable
     }
 
     [Fact]
+    public void Nested_Toc_Items_Get_A_Level_And_Their_Parents_Title()
+    {
+        Directory.CreateDirectory(Path.Combine(repo, "specs", "001-thing"));
+        File.WriteAllText(Path.Combine(repo, "specs", "001-thing", "spec.md"), "# Thing spec\n");
+        File.WriteAllText(Path.Combine(repo, "specs", "001-thing", "plan.md"), "# Thing plan\n");
+        File.WriteAllText(Path.Combine(repo, "specs", "001-thing", "tasks.md"), "# Thing tasks\n");
+        File.AppendAllText(Path.Combine(repo, "docs", "toc.yml"),
+            "- name: Specs\n  items:\n    - href: ../specs/001-thing/spec.md\n      items:\n        - name: Plan\n          href: ../specs/001-thing/plan.md\n        - href: ../specs/001-thing/tasks.md\n");
+
+        Build();
+        using var json = JsonDocument.Parse(File.ReadAllText(Path.Combine(Out, "index.json")));
+        var specs = json.RootElement.GetProperty("sections").EnumerateArray()
+            .Single(s => s.GetProperty("title").GetString() == "Specs").GetProperty("pages").EnumerateArray().ToList();
+
+        Assert.Equal(["specs-001-thing-spec", "specs-001-thing-plan", "specs-001-thing-tasks"], specs.Select(p => p.GetProperty("slug").GetString()));
+        Assert.False(specs[0].TryGetProperty("level", out _)); // top-level items omit level and parent
+        Assert.False(specs[0].TryGetProperty("parent", out _));
+        Assert.Equal(1, specs[1].GetProperty("level").GetInt32());
+        Assert.Equal("Thing spec", specs[1].GetProperty("parent").GetString()); // the parent's resolved title
+        Assert.Equal("Plan", specs[1].GetProperty("title").GetString());
+        Assert.Equal("Thing spec", specs[2].GetProperty("parent").GetString()); // siblings share the parent
+        Assert.Equal("Thing tasks", specs[2].GetProperty("title").GetString());
+    }
+
+    [Fact]
     public void Collects_H2_And_H3_Headings_For_The_Outline()
     {
         Build();
@@ -142,7 +167,7 @@ public sealed class DocsBuilderTests : IDisposable
 
         Assert.Empty(result.Warnings); // every diagram is pre-rendered, every link resolves
         Assert.True(result.PageCount >= 8);
-        foreach (var doc in new[] { "readme", "architecture", "game-engine", "components", "theming-and-animations", "docs-system", "testing", "build-and-deploy" })
+        foreach (var doc in new[] { "readme", "architecture", "game-engine", "components", "theming-and-animations", "docs-system", "testing", "build-and-deploy", "spec-driven-development", "specify-memory-constitution" })
             Assert.True(File.Exists(Path.Combine(output, doc + ".html")), $"{doc}.html missing");
         Assert.True(result.DiagramCount >= 8);
     }

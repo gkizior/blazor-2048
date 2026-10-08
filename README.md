@@ -35,6 +35,8 @@ Play it on your iPhone straight from Safari — no Mac, no App Store, no fees.
 | `src/Game2048.Core` | Pure C# game logic (`Game.cs`): sliding, merging, spawning, win/lose, tile ids for animations |
 | `src/Blazor2048` | Blazor WebAssembly PWA: game board, theming, docs viewer, footer |
 | `tools/DocsBuilder` | Build-time tool: Markdown → HTML (Markdig), Mermaid → SVG (mermaid-cli) |
+| `tools/PerfTrace` | Developer tool: Chromium traces and per-frame tile sampling to measure animation smoothness |
+| `specs/`, `.specify/` | Feature specs (spec, plan, tasks) and the project constitution, in the Spec Kit layout |
 | `docs/` | Project docs shown in the app ([architecture](docs/architecture.md), [engine](docs/game-engine.md), [testing](docs/testing.md), ...) |
 | `tests/Blazor2048.Tests` | xUnit v3 tests: game rules, tile tracking, docs generator, palette contrast |
 | `tests/Blazor2048.ComponentTests` | bUnit tests for the components (board, input, theme, footer, docs) |
@@ -47,6 +49,13 @@ JavaScript: the only JS interop is the call to the browser's built-in `localStor
 `Services/BrowserStorage.cs`), so the best score and theme survive a reload. Mermaid diagrams are
 pre-rendered to SVG at build time, so no diagram library runs in the browser.
 See [Architecture](docs/architecture.md) for the details.
+
+## Specs
+
+Every feature starts as a spec. [`specs/`](specs/) has one folder per feature (`spec.md`,
+`plan.md`, `tasks.md`), checked against the project [constitution](.specify/memory/constitution.md).
+See [Spec-driven development](docs/spec-driven-development.md) for the workflow and the list of
+specs. They also appear under **Specs** in the in-app docs.
 
 ## Run it locally
 

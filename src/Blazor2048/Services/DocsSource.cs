@@ -21,7 +21,13 @@ public sealed record DocsPage(
     [property: JsonPropertyName("slug")] string Slug,
     [property: JsonPropertyName("title")] string Title,
     [property: JsonPropertyName("source")] string Source,
-    [property: JsonPropertyName("headings")] IReadOnlyList<DocsHeading> Headings);
+    [property: JsonPropertyName("headings")] IReadOnlyList<DocsHeading> Headings,
+    [property: JsonPropertyName("level")] int Level = 0,
+    [property: JsonPropertyName("parent")] string? Parent = null)
+{
+    /// <summary>Title with its parent page, for places shown out of the sidebar's context.</summary>
+    public string FullTitle => Parent is null ? Title : $"{Parent}: {Title}";
+}
 
 public sealed record DocsHeading(
     [property: JsonPropertyName("id")] string Id,

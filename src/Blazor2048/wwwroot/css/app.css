@@ -403,6 +403,9 @@ a { color: var(--link); }
 }
 .toc-link:hover { background: var(--surface-2); }
 .toc-link.active { background: var(--accent-soft); color: var(--link); font-weight: 700; }
+/* Items nested under another page in docs/toc.yml (e.g. a spec's plan and tasks). */
+.toc-child .toc-link { padding: 3px 8px 3px 22px; font-size: 13px; color: var(--text-muted); }
+.toc-child .toc-link.active { color: var(--link); }
 
 .docs-outline a { display: block; padding: 4px 8px; color: var(--text-muted); text-decoration: none; border-left: 2px solid transparent; }
 .docs-outline a:hover { color: var(--link); border-left-color: var(--accent); }

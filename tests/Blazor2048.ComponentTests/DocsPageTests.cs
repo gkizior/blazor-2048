@@ -1,4 +1,5 @@
 using Blazor2048.Pages;
+using Blazor2048.Services;
 using Bunit;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
@@ -73,6 +74,32 @@ public class DocsPageTests : AppTestContext
     }
 
     [Fact]
+    public void Nested_Pages_Are_Indented_Under_Their_Parent_And_Named_With_It()
+    {
+        DocsSource.Index = new([
+            new DocsSection("Specs", [
+                new DocsPage("spec", "001 Core game", "specs/001-core-game/spec.md", []),
+                new DocsPage("plan", "Plan", "specs/001-core-game/plan.md", [], Level: 1, Parent: "001 Core game"),
+                new DocsPage("tasks", "Tasks", "specs/001-core-game/tasks.md", [], Level: 1, Parent: "001 Core game"),
+            ]),
+        ]);
+        DocsSource.Html["spec"] = "<h1>Spec</h1>";
+        DocsSource.Html["plan"] = "<h1>Plan</h1>";
+        DocsSource.Html["tasks"] = "<h1>Tasks</h1>";
+
+        var cut = RenderDocs("plan");
+
+        Assert.Equal(["Plan", "Tasks"], cut.FindAll("li.toc-child .toc-link").Select(a => a.TextContent));
+        Assert.Equal("001 Core game", cut.Find(".toc-section li:not(.toc-child) .toc-link").TextContent);
+        Assert.Equal("Specs / 001 Core game / Plan", cut.Find(".docs-breadcrumb").TextContent.Trim());
+        Assert.Equal("001 Core game", cut.Find(".pager-link.prev .pager-title").TextContent);
+        Assert.Equal("001 Core game: Tasks", cut.Find(".pager-link.next .pager-title").TextContent);
+
+        cut.Find("input[type=search]").Input("core game");
+        Assert.Equal(3, cut.FindAll(".toc-link").Count); // children match through their parent's title
+    }
+
+    [Fact]
     public void Unknown_Slug_Shows_Not_Found()
     {
         var cut = RenderDocs("nope");
@@ -104,16 +131,16 @@ public class DocsPageTests : AppTestContext
     [Fact]
     public void Shows_An_Error_When_Docs_Fail_To_Load()
     {
-        Services.AddSingleton<Blazor2048.Services.IDocsSource>(new FailingDocs());
+        Services.AddSingleton<IDocsSource>(new FailingDocs());
 
         var cut = RenderDocs();
 
         Assert.Contains("Couldn't load the docs", cut.Find(".docs-message.error").TextContent);
     }
 
-    private sealed class FailingDocs : Blazor2048.Services.IDocsSource
+    private sealed class FailingDocs : IDocsSource
     {
-        public Task<Blazor2048.Services.DocsIndex> GetIndexAsync() => throw new HttpRequestException("offline");
+        public Task<DocsIndex> GetIndexAsync() => throw new HttpRequestException("offline");
         public Task<string> GetPageHtmlAsync(string slug) => throw new HttpRequestException("offline");
     }
 }

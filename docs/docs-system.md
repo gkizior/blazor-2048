@@ -21,7 +21,10 @@ flowchart LR
    `ReferenceOutputAssembly="false"`) and runs `DocsBuilder build` before the app build.
    It is incremental: it only runs when a `.md` file, `toc.yml`, a diagram, or the tool changes.
 2. DocsBuilder finds **every `.md` file in the repo** (skipping `bin`, `obj`, `node_modules`, ...),
-   orders them by `docs/toc.yml`, and puts anything not listed under **More**.
+   orders them by `docs/toc.yml`, and puts anything not listed under **More**. A TOC item can have
+   its own `items` (one level deep); those pages are indented under it in the sidebar, and the
+   breadcrumb and pager name them with their parent ("001 Core game: Plan"). The **Specs** section
+   uses this for each spec's plan and tasks.
 3. Each file is parsed with [Markdig](https://github.com/xoofx/markdig) (advanced extensions: tables,
    task lists, GitHub-style heading ids, ...). The renderer then:
    - replaces each ` ```mermaid ` block with a `<figure>` holding a light and a dark `<img>`;
@@ -69,5 +72,6 @@ dotnet run --project tools/DocsBuilder -- render-diagrams --repo .
 
 1. Create `docs/my-topic.md` with a `# Title`.
 2. Add it to `docs/toc.yml` under a section (optional: unlisted files appear under **More**).
+   A new spec folder must be listed (with its plan and tasks nested); `SpecsTests` checks this.
 3. If it has Mermaid blocks, run `render-diagrams` and commit the new SVGs.
 4. `dotnet build` and open `/docs/my-topic`.

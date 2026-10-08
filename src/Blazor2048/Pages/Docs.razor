@@ -3,7 +3,7 @@
 @inject IDocsSource Source
 @inject BuildInfo Build
 
-<PageTitle>@(current?.Title ?? "Docs") · 2048 Docs</PageTitle>
+<PageTitle>@(current?.FullTitle ?? "Docs") · 2048 Docs</PageTitle>
 
 <div class="docs @(menuOpen ? "menu-open" : null)">
     <header class="docs-topbar">
@@ -37,7 +37,7 @@
                             @foreach (var p in pages)
                             {
                                 var active = p == current;
-                                <li>
+                                <li class="@(p.Level > 0 ? "toc-child" : null)">
                                     <a href="docs/@p.Slug" class="toc-link @(active ? "active" : null)"
                                        aria-current="@(active ? "page" : null)" @onclick="() => menuOpen = false">@p.Title</a>
                                 </li>
@@ -70,18 +70,24 @@
             }
             else
             {
-                <div class="docs-breadcrumb">@SectionOf(current)?.Title <span aria-hidden="true">/</span> @current.Title</div>
+                <div class="docs-breadcrumb">
+                    @for (var i = 0; i < Breadcrumb.Count; i++)
+                    {
+                        if (i > 0) { <span aria-hidden="true"> / </span> }
+                        <span>@Breadcrumb[i]</span>
+                    }
+                </div>
                 <div class="markdown-body">@((MarkupString)html!)</div>
 
                 <nav class="docs-pager" aria-label="Previous and next">
                     @if (Neighbour(-1) is { } prev)
                     {
-                        <a class="pager-link prev" href="docs/@prev.Slug"><span class="pager-label">Previous</span><span class="pager-title">@prev.Title</span></a>
+                        <a class="pager-link prev" href="docs/@prev.Slug"><span class="pager-label">Previous</span><span class="pager-title">@prev.FullTitle</span></a>
                     }
                     else { <span></span> }
                     @if (Neighbour(+1) is { } next)
                     {
-                        <a class="pager-link next" href="docs/@next.Slug"><span class="pager-label">Next</span><span class="pager-title">@next.Title</span></a>
+                        <a class="pager-link next" href="docs/@next.Slug"><span class="pager-label">Next</span><span class="pager-title">@next.FullTitle</span></a>
                     }
                 </nav>
 
@@ -141,10 +147,14 @@
 
     private bool Matches(DocsPage p) =>
         string.IsNullOrWhiteSpace(filter)
-        || p.Title.Contains(filter.Trim(), StringComparison.OrdinalIgnoreCase)
+        || p.FullTitle.Contains(filter.Trim(), StringComparison.OrdinalIgnoreCase)
         || p.Headings.Any(h => h.Text.Contains(filter.Trim(), StringComparison.OrdinalIgnoreCase));
 
     private DocsSection? SectionOf(DocsPage p) => index?.Sections.FirstOrDefault(s => s.Pages.Contains(p));
+
+    // Section / parent page (for nested pages) / page.
+    private List<string> Breadcrumb => current is null ? [] :
+        new[] { SectionOf(current)?.Title, current.Parent, current.Title }.OfType<string>().ToList();
 
     private DocsPage? Neighbour(int offset)
     {

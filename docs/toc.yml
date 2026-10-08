@@ -1,5 +1,6 @@
 # Table of contents for the in-app docs (DocFX-style). Paths are relative to this folder.
 # Any .md file in the repo that isn't listed here still appears, under "More".
+# An item can have its own `items` (one level deep); they are shown nested under it.
 - name: Overview
   items:
     - name: Introduction
@@ -22,3 +23,86 @@
       href: testing.md
     - name: Build and deploy
       href: build-and-deploy.md
+- name: Specs
+  items:
+    - name: Spec-driven development
+      href: spec-driven-development.md
+      items:
+        - name: Spec template
+          href: ../.specify/templates/spec-template.md
+        - name: Plan template
+          href: ../.specify/templates/plan-template.md
+        - name: Tasks template
+          href: ../.specify/templates/tasks-template.md
+    - name: Constitution
+      href: ../.specify/memory/constitution.md
+    - name: 001 Core game
+      href: ../specs/001-core-game/spec.md
+      items:
+        - name: Plan
+          href: ../specs/001-core-game/plan.md
+        - name: Tasks
+          href: ../specs/001-core-game/tasks.md
+    - name: 002 Blazor first, minimal interop
+      href: ../specs/002-blazor-first-minimal-interop/spec.md
+      items:
+        - name: Plan
+          href: ../specs/002-blazor-first-minimal-interop/plan.md
+        - name: Tasks
+          href: ../specs/002-blazor-first-minimal-interop/tasks.md
+    - name: 003 Dark mode and palette
+      href: ../specs/003-dark-mode-and-palette/spec.md
+      items:
+        - name: Plan
+          href: ../specs/003-dark-mode-and-palette/plan.md
+        - name: Tasks
+          href: ../specs/003-dark-mode-and-palette/tasks.md
+    - name: 004 Fluid animations
+      href: ../specs/004-fluid-animations/spec.md
+      items:
+        - name: Plan
+          href: ../specs/004-fluid-animations/plan.md
+        - name: Tasks
+          href: ../specs/004-fluid-animations/tasks.md
+    - name: 005 Build-info footer
+      href: ../specs/005-build-info-footer/spec.md
+      items:
+        - name: Plan
+          href: ../specs/005-build-info-footer/plan.md
+        - name: Tasks
+          href: ../specs/005-build-info-footer/tasks.md
+    - name: 006 In-app docs with Mermaid
+      href: ../specs/006-in-app-docs/spec.md
+      items:
+        - name: Plan
+          href: ../specs/006-in-app-docs/plan.md
+        - name: Tasks
+          href: ../specs/006-in-app-docs/tasks.md
+    - name: 007 Testing stack
+      href: ../specs/007-testing-stack/spec.md
+      items:
+        - name: Plan
+          href: ../specs/007-testing-stack/plan.md
+        - name: Tasks
+          href: ../specs/007-testing-stack/tasks.md
+    - name: 008 Dependency policy and Dependabot
+      href: ../specs/008-dependency-policy/spec.md
+      items:
+        - name: Plan
+          href: ../specs/008-dependency-policy/plan.md
+        - name: Tasks
+          href: ../specs/008-dependency-policy/tasks.md
+    - name: 009 Repo metadata and social image
+      href: ../specs/009-repo-metadata-and-social-image/spec.md
+      items:
+        - name: Plan
+          href: ../specs/009-repo-metadata-and-social-image/plan.md
+        - name: Tasks
+          href: ../specs/009-repo-metadata-and-social-image/tasks.md
+    - name: 010 Spec-driven development
+      href: ../specs/010-spec-driven-development/spec.md
+      items:
+        - name: Plan
+          href: ../specs/010-spec-driven-development/plan.md
+        - name: Tasks
+          href: ../specs/010-spec-driven-development/tasks.md

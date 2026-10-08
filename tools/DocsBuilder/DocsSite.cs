@@ -8,7 +8,11 @@ namespace DocsBuilder;
 
 public sealed record DocHeading(string Id, string Text, int Level);
 
-public sealed record DocPage(string Slug, string Title, string Source, IReadOnlyList<DocHeading> Headings);
+/// <param name="Level">0 for top-level TOC items, 1 for items nested under another page.</param>
+/// <param name="Parent">Title of the page this one is nested under, if any.</param>
+public sealed record DocPage(string Slug, string Title, string Source, IReadOnlyList<DocHeading> Headings,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] int Level = 0,
+    string? Parent = null);
 
 public sealed record DocSection(string Title, IReadOnlyList<DocPage> Pages);
 
@@ -16,7 +20,8 @@ public sealed record BuildResult(int PageCount, int DiagramCount, IReadOnlyList<
 
 /// <summary>
 /// Every Markdown file in the repo, ordered by docs/toc.yml (DocFX style). Files not listed in the
-/// TOC still show up, in a "More" section, so no doc is ever left out.
+/// TOC still show up, in a "More" section, so no doc is ever left out. A TOC item can have its own
+/// <c>items</c> (one level deep), shown nested under it in the sidebar.
 /// </summary>
 public sealed class DocsSite
 {
@@ -29,9 +34,9 @@ public sealed class DocsSite
     /// <summary>Repo-relative source path ("docs/testing.md") to slug ("testing").</summary>
     public IReadOnlyDictionary<string, string> SlugsBySource { get; }
 
-    private readonly List<(string Title, List<(string Source, string? Title)> Items)> layout;
+    private readonly List<(string Title, List<TocItem> Items)> layout;
 
-    private DocsSite(string repoRoot, string repoUrl, List<(string Title, List<(string Source, string? Title)> Items)> layout)
+    private DocsSite(string repoRoot, string repoUrl, List<(string Title, List<TocItem> Items)> layout)
     {
         RepoRoot = repoRoot;
         RepoUrl = repoUrl.TrimEnd('/');
@@ -46,7 +51,7 @@ public sealed class DocsSite
     {
         var all = FindMarkdown(repoRoot).ToList();
         var listed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var sections = new List<(string Title, List<(string Source, string? Title)> Items)>();
+        var sections = new List<(string Title, List<TocItem> Items)>();
 
         var tocPath = Path.Combine(repoRoot, "docs", "toc.yml");
         if (File.Exists(tocPath))
@@ -56,20 +61,30 @@ public sealed class DocsSite
                 .Deserialize<List<TocEntry>>(File.ReadAllText(tocPath)) ?? [];
             foreach (var section in toc)
             {
-                var items = new List<(string, string?)>();
+                var items = new List<TocItem>();
                 foreach (var item in section.Items ?? [])
                 {
-                    if (item.Href is null) continue;
+                    if (!Add(item, 0, null)) continue;
+                    var parentSource = items[^1].Source;
+                    foreach (var child in item.Items ?? [])
+                        Add(child, 1, parentSource);
+                }
+
+                bool Add(TocEntry item, int level, string? parent)
+                {
+                    if (item.Href is null) return false;
                     var source = Normalize(Path.GetRelativePath(repoRoot, Path.GetFullPath(Path.Combine(repoRoot, "docs", item.Href))));
                     if (!all.Contains(source, StringComparer.OrdinalIgnoreCase))
                         throw new FileNotFoundException($"docs/toc.yml points at {item.Href}, which doesn't exist.");
-                    if (listed.Add(source)) items.Add((source, item.Name));
+                    if (!listed.Add(source)) return false;
+                    items.Add(new TocItem(source, item.Name, level, parent));
+                    return true;
                 }
                 if (items.Count > 0) sections.Add((section.Name ?? "Docs", items));
             }
         }
 
-        var rest = all.Where(s => !listed.Contains(s)).OrderBy(s => s, StringComparer.OrdinalIgnoreCase).Select(s => (s, (string?)null)).ToList();
+        var rest = all.Where(s => !listed.Contains(s)).OrderBy(s => s, StringComparer.OrdinalIgnoreCase).Select(s => new TocItem(s, null, 0, null)).ToList();
         if (rest.Count > 0) sections.Add(("More", rest));
 
         return new DocsSite(repoRoot, repoUrl, sections);
@@ -87,14 +102,17 @@ public sealed class DocsSite
         var diagrams = new HashSet<string>();
         var renderer = new MarkdownRenderer(this, warnings, diagrams);
         var pages = new List<(DocPage Page, string Html, string Section)>();
+        var titles = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var (sectionTitle, items) in layout)
-        foreach (var (source, tocTitle) in items)
+        foreach (var (source, tocTitle, level, parentSource) in items)
         {
             var markdown = File.ReadAllText(Path.Combine(RepoRoot, source));
             var doc = renderer.Render(markdown, source);
             var title = tocTitle ?? doc.Title ?? Path.GetFileNameWithoutExtension(source);
-            pages.Add((new DocPage(SlugsBySource[source], title, source, doc.Headings), doc.Html, sectionTitle));
+            titles[source] = title;
+            var parent = parentSource is null ? null : titles[parentSource];
+            pages.Add((new DocPage(SlugsBySource[source], title, source, doc.Headings, level, parent), doc.Html, sectionTitle));
         }
 
         // Fresh output every time so deleted docs and diagrams don't linger.
@@ -159,6 +177,9 @@ public sealed class DocsSite
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
         WriteIndented = true,
     };
+
+    /// <summary>A page in the sidebar; <c>ParentSource</c> is set for nested items.</summary>
+    private sealed record TocItem(string Source, string? Title, int Level, string? ParentSource);
 
     private sealed class TocEntry
     {
