@@ -1,6 +1,6 @@
 # Blazor 2048
 
-The classic **2048** sliding-tile puzzle, built with **.NET 9 Blazor WebAssembly** as an installable PWA.
+The classic **2048** sliding-tile puzzle, built with **.NET 10 Blazor WebAssembly** as an installable PWA.
 Play it on your iPhone straight from Safari — no Mac, no App Store, no fees.
 
 **Play:** https://gkizior.github.io/blazor-2048/
@@ -34,7 +34,7 @@ JavaScript. The only JS interop is the call to the browser's built-in `localStor
 
 ## Run it locally
 
-Requires the [.NET 9 SDK](https://dotnet.microsoft.com/download).
+Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download).
 
 ```bash
 git clone https://github.com/gkizior/blazor-2048.git

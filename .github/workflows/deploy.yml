@@ -24,7 +24,7 @@ jobs:
 
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 9.0.x
+          dotnet-version: 10.0.x
 
       - name: Restore
         run: dotnet restore Blazor2048.sln
@@ -58,7 +58,7 @@ jobs:
 
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 9.0.x
+          dotnet-version: 10.0.x
 
       - name: Publish app the same way as for Pages
         run: |
@@ -70,7 +70,7 @@ jobs:
 
       - name: Install Playwright Chromium
         shell: pwsh
-        run: tests/Blazor2048.E2ETests/bin/Release/net9.0/playwright.ps1 install --with-deps chromium
+        run: tests/Blazor2048.E2ETests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
 
       - name: Run E2E tests
         env:
