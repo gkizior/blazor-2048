@@ -1,0 +1,242 @@
+@using Game2048.Core
+@* Split button: the main part starts a new game at the current size; the caret opens a menu of
+   board sizes (ARIA menu button pattern) with a Custom… dialog. Pure Blazor: focus moves with
+   ElementReference.FocusAsync, click-outside is a transparent backdrop, and key handling stops
+   propagation so menu and dialog keys never move the board. *@
+
+<div class="split-btn">
+    <button type="button" class="btn new-game" @onclick="NewGameAtCurrentSize"
+            aria-label="@($"New Game, {Size} by {Size}")">
+        New Game <span class="size-badge" aria-hidden="true">@Size×@Size</span>
+    </button>
+    <button type="button" class="btn new-game-caret" id="size-menu-button" @ref="caret"
+            aria-haspopup="menu" aria-expanded="@(menuOpen ? "true" : "false")" aria-controls="size-menu"
+            aria-label="Choose board size" title="Board size"
+            @onclick="ToggleMenu" @onkeydown="OnCaretKeyDown" @onkeydown:stopPropagation="true">
+        <Icon Name="chevron-down" />
+    </button>
+
+    @if (menuOpen)
+    {
+        <div class="menu-backdrop" @onclick="CloseMenu"></div>
+        <ul class="size-menu" id="size-menu" role="menu" aria-labelledby="size-menu-button"
+            @onkeydown="OnMenuKeyDown" @onkeydown:stopPropagation="true">
+            @for (var i = 0; i < ItemCount; i++)
+            {
+                var index = i;
+                var isCustom = index == Presets.Count;
+                var itemSize = isCustom ? 0 : Presets[index];
+                var isChecked = isCustom ? !Presets.Contains(Size) : itemSize == Size;
+                <li role="none">
+                    <button type="button" role="menuitemradio" tabindex="-1" class="size-option @(isChecked ? "checked" : null)"
+                            aria-checked="@(isChecked ? "true" : "false")" data-size="@(isCustom ? "custom" : itemSize.ToString())"
+                            @ref="items[index]" @onclick="() => Choose(index)">
+                        <span class="check" aria-hidden="true">@if (isChecked) { <Icon Name="check" /> }</span>
+                        @if (isCustom)
+                        {
+                            <span>Custom…</span>
+                            @if (isChecked) { <span class="size-note">@Size×@Size</span> }
+                        }
+                        else
+                        {
+                            <span>@itemSize×@itemSize</span>
+                            @if (itemSize == BoardSize.Default) { <span class="size-note">classic</span> }
+                        }
+                    </button>
+                </li>
+            }
+        </ul>
+    }
+</div>
+
+@if (customOpen)
+{
+    <div class="dialog-backdrop" @onclick="CancelCustom"></div>
+    <div class="size-dialog" role="dialog" aria-modal="true" aria-labelledby="custom-size-title"
+         @onkeydown="OnDialogKeyDown" @onkeydown:stopPropagation="true">
+        <form @onsubmit="SubmitCustom" novalidate>
+            <h2 id="custom-size-title">Custom board</h2>
+            <label for="custom-size">Tiles per side (@BoardSize.RangeText). Boards are always square.</label>
+            <div class="custom-row">
+                <input id="custom-size" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" maxlength="12"
+                       @ref="customInput" @bind="customText" @bind:event="oninput"
+                       aria-invalid="@(customError is null ? "false" : "true")"
+                       aria-describedby="@(customError is null ? null : "custom-size-error")" />
+                <span class="custom-preview" aria-hidden="true">× @(BoardSize.TryParse(customText, out var n, out _) ? n.ToString() : "N")</span>
+            </div>
+            @if (customError is not null)
+            {
+                <p id="custom-size-error" class="field-error" role="alert">@customError</p>
+            }
+            <div class="dialog-buttons">
+                <button type="button" class="btn btn-secondary" @onclick="CancelCustom">Cancel</button>
+                <button type="submit" class="btn">Start</button>
+            </div>
+        </form>
+    </div>
+}
+
+@code {
+    /// <summary>The current board size (N for N×N).</summary>
+    [Parameter] public int Size { get; set; } = BoardSize.Default;
+
+    /// <summary>Starts a new game of the given size (the current size for the main button).</summary>
+    [Parameter] public EventCallback<int> OnNewGame { get; set; }
+
+    /// <summary>Raised when the menu or dialog opens or closes, so the board can ignore moves meanwhile.</summary>
+    [Parameter] public EventCallback<bool> OnOpenChanged { get; set; }
+
+    private static IReadOnlyList<int> Presets => BoardSize.Presets;
+    private static int ItemCount => Presets.Count + 1; // + Custom…
+
+    private readonly ElementReference[] items = new ElementReference[ItemCount];
+    private ElementReference caret;
+    private ElementReference customInput;
+    private bool menuOpen;
+    private bool customOpen;
+    private string customText = "";
+    private string? customError;
+    private int focusItem = -1;      // menu item to focus after the next render
+    private bool focusCaret;         // return focus to the caret after the next render
+    private bool focusCustom;        // focus the custom input after the next render
+    private int lastFocused = -1;    // menu item that has focus now
+
+    public bool IsOpen => menuOpen || customOpen;
+
+    // The board re-renders on every move and passes its callbacks again, which would re-render this
+    // button too. Skip those renders unless the size changed; its own events always render.
+    private bool fromParent;
+    private int renderedSize;
+
+    protected override void OnParametersSet() => fromParent = true;
+
+    protected override bool ShouldRender()
+    {
+        var parentOnly = fromParent;
+        fromParent = false;
+        if (parentOnly && Size == renderedSize) return false;
+        renderedSize = Size;
+        return true;
+    }
+
+    private int CheckedIndex
+    {
+        get
+        {
+            for (var i = 0; i < Presets.Count; i++) if (Presets[i] == Size) return i;
+            return Presets.Count;
+        }
+    }
+
+    private Task NewGameAtCurrentSize() => OnNewGame.InvokeAsync(Size);
+
+    private Task ToggleMenu() => menuOpen ? CloseMenu() : OpenMenu(CheckedIndex);
+
+    private async Task OpenMenu(int focus)
+    {
+        menuOpen = true;
+        focusItem = focus;
+        lastFocused = -1;
+        await OnOpenChanged.InvokeAsync(true);
+    }
+
+    private async Task CloseMenu(bool returnFocus = false)
+    {
+        if (!menuOpen) return;
+        menuOpen = false;
+        focusCaret = returnFocus;
+        await OnOpenChanged.InvokeAsync(customOpen);
+    }
+
+    private Task CloseMenu() => CloseMenu(false);
+
+    private async Task OnCaretKeyDown(KeyboardEventArgs e)
+    {
+        // Enter and Space click the button (ToggleMenu); arrows open the menu at the checked/last item.
+        switch (e.Key)
+        {
+            case "ArrowDown": await OpenMenu(CheckedIndex); break;
+            case "ArrowUp": await OpenMenu(ItemCount - 1); break;
+            case "Escape": await CloseMenu(returnFocus: true); break;
+        }
+    }
+
+    private async Task OnMenuKeyDown(KeyboardEventArgs e)
+    {
+        var current = lastFocused >= 0 ? lastFocused : CheckedIndex;
+        switch (e.Key)
+        {
+            case "ArrowDown": focusItem = (current + 1) % ItemCount; break;
+            case "ArrowUp": focusItem = (current - 1 + ItemCount) % ItemCount; break;
+            case "Home": focusItem = 0; break;
+            case "End": focusItem = ItemCount - 1; break;
+            case "Escape": await CloseMenu(returnFocus: true); return;
+            case "Tab": await CloseMenu(returnFocus: false); return;
+            default: return;
+        }
+    }
+
+    private async Task Choose(int index)
+    {
+        menuOpen = false;
+        if (index == Presets.Count)
+        {
+            customOpen = true;
+            customText = Presets.Contains(Size) ? "" : Size.ToString();
+            customError = null;
+            focusCustom = true;
+            await OnOpenChanged.InvokeAsync(true);
+            return;
+        }
+        await OnOpenChanged.InvokeAsync(false);
+        await OnNewGame.InvokeAsync(Presets[index]);
+    }
+
+    private async Task SubmitCustom()
+    {
+        if (!BoardSize.TryParse(customText, out var size, out var error))
+        {
+            customError = error;
+            focusCustom = true;
+            return;
+        }
+        customOpen = false;
+        customError = null;
+        await OnOpenChanged.InvokeAsync(false);
+        await OnNewGame.InvokeAsync(size);
+    }
+
+    private async Task CancelCustom()
+    {
+        customOpen = false;
+        customError = null;
+        focusCaret = true;
+        await OnOpenChanged.InvokeAsync(false);
+    }
+
+    private async Task OnDialogKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape") await CancelCustom();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (menuOpen && focusItem >= 0)
+        {
+            var i = focusItem;
+            focusItem = -1;
+            lastFocused = i;
+            await items[i].FocusAsync();
+        }
+        else if (customOpen && focusCustom)
+        {
+            focusCustom = false;
+            await customInput.FocusAsync();
+        }
+        else if (focusCaret)
+        {
+            focusCaret = false;
+            await caret.FocusAsync();
+        }
+    }
+}

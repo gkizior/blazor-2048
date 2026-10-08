@@ -26,6 +26,7 @@ public abstract class AppTestContext : BunitContext
         JSInterop.Mode = JSRuntimeMode.Loose;
         Services.AddScoped<BrowserStorage>();
         Services.AddScoped<BestScoreStore>();
+        Services.AddScoped<BoardSizeStore>();
         Services.AddScoped<ThemeService>();
         Services.AddSingleton(Game);
         Services.AddSingleton(TestBuild);

@@ -28,6 +28,7 @@
     --overlay-win:   light-dark(rgba(109, 74, 255, 0.55), rgba(109, 74, 255, 0.45));
     --shadow:        light-dark(0 10px 30px rgba(59, 54, 49, 0.12), 0 10px 30px rgba(0, 0, 0, 0.45));
     --code-bg:       light-dark(#f3efe9, #191b22);
+    --error:         light-dark(#b42318, #ff8a80);
 
     /* Tiles: text/background pairs are at least 4.5:1 contrast in both themes. */
     --tile-2-bg:     light-dark(#eee6db, #3e4556);  --tile-2-fg:    light-dark(#4a4038, #e7e9ee);
@@ -49,10 +50,12 @@
     --pop: 180ms;                                 /* merged tile pop, after the slide */
     --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);   /* snappy: most of the distance in the first frames */
 
-    --gap: clamp(6px, 2.4vmin, 14px);
     --radius: 10px;
-    /* Board fits the screen: limited by width, height left after header + footer, and a desktop cap. */
-    --board: min(92vw, calc(100dvh - 280px - env(safe-area-inset-top) - env(safe-area-inset-bottom)), 480px);
+    /* Board fits the screen: limited by width, height left after header + footer, and a desktop cap
+       that grows a little with the board size (480px at 4x4, 600px at 10x10, 720px at 16x16).
+       --n (tiles per side) is set on .game by GameBoard.razor, so the header matches the board. */
+    --n: 4;
+    --board: min(92vw, calc(100dvh - 280px - env(safe-area-inset-top) - env(safe-area-inset-bottom)), calc(400px + var(--n) * 20px));
     --font: "Inter", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
     --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
 }
@@ -98,6 +101,8 @@ a { color: var(--link); }
 
 /* ========================================================================== Game layout */
 .game {
+    /* Re-evaluated here because --n is set on this element (custom properties resolve where defined). */
+    --board: min(92vw, calc(100dvh - 280px - env(safe-area-inset-top) - env(safe-area-inset-bottom)), calc(400px + var(--n) * 20px));
     flex: 1;
     min-height: 0;
     display: flex;
@@ -113,11 +118,22 @@ a { color: var(--link); }
 
 .title {
     margin: 0;
-    font-size: clamp(44px, 14vw, 72px);
+    /* The title is the target (2048 … 131072 and beyond): longer numbers shrink to keep room for the scores. */
+    font-size: max(24px, calc(clamp(44px, 14vw, 72px) * 4 / max(4, var(--digits, 4))));
+    white-space: nowrap;
     font-weight: 800;
     line-height: 1;
     letter-spacing: -0.03em;
     color: var(--text);
+}
+
+.title-pending { visibility: hidden; } /* until the saved size is applied: no 2048 flash */
+.title-num { display: inline-block; }
+/* A size change flips the new name in, like a tile turning over. */
+.title-flip { animation: title-flip 360ms cubic-bezier(.2, .8, .3, 1.2) both; }
+@keyframes title-flip {
+    from { transform: perspective(300px) rotateX(-90deg); opacity: 0; }
+    to { transform: none; opacity: 1; }
 }
 
 .scores { display: flex; gap: 6px; }
@@ -134,10 +150,13 @@ a { color: var(--link); }
 .score-box .label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--score-label); letter-spacing: .06em; }
 .score-box .value { font-size: 20px; font-weight: 800; color: var(--score-value); font-variant-numeric: tabular-nums; }
 
-.hint { margin: 0; font-size: 14px; color: var(--text-muted); }
+/* The hint gets its own line when the row leaves it less than 160px (phones, and long names like
+   "get to 131072!"), instead of wrapping into a narrow column next to the buttons. */
+.sub { flex-wrap: wrap; row-gap: 6px; }
+.hint { margin: 0; font-size: 14px; color: var(--text-muted); flex: 1 1 160px; }
 .hint strong { color: var(--text); }
 
-.actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; margin-left: auto; }
 
 /* ========================================================================== Buttons */
 .btn {
@@ -181,13 +200,79 @@ a { color: var(--link); }
 .icon-btn:hover { background: var(--surface-2); }
 .icon-btn:active { transform: scale(0.95); }
 
+/* Split New Game button: main part + caret that opens the board-size menu. */
+.split-btn { position: relative; display: inline-flex; }
+.split-btn .new-game { border-radius: 8px 0 0 8px; padding-right: 12px; }
+.split-btn .new-game-caret { border-radius: 0 8px 8px 0; padding: 10px 8px; border-left: 1px solid rgba(255, 255, 255, 0.35); }
+.split-btn .new-game-caret .icon { width: 18px; height: 18px; transition: transform 150ms ease; }
+.split-btn .new-game-caret[aria-expanded="true"] .icon { transform: rotate(180deg); }
+.size-badge { font-size: 12px; font-weight: 700; padding: 1px 6px; border-radius: 999px; background: rgba(255, 255, 255, 0.22); font-variant-numeric: tabular-nums; }
+
+.menu-backdrop, .dialog-backdrop { position: fixed; inset: 0; z-index: 30; }
+.dialog-backdrop { background: rgba(0, 0, 0, 0.35); }
+
+.size-menu {
+    position: absolute; top: calc(100% + 6px); right: 0; z-index: 31;
+    list-style: none; margin: 0; padding: 6px; min-width: 170px;
+    background: var(--surface); color: var(--text);
+    border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow);
+}
+.size-option {
+    display: flex; align-items: center; gap: 8px; width: 100%;
+    padding: 8px 10px; border: 0; border-radius: 6px; background: none; color: inherit;
+    font: inherit; font-size: 15px; font-weight: 600; text-align: left; cursor: pointer;
+    font-variant-numeric: tabular-nums;
+}
+.size-option:hover, .size-option:focus-visible { background: var(--surface-2); outline: none; }
+.size-option:focus-visible { box-shadow: inset 0 0 0 2px var(--accent); }
+.size-option.checked { color: var(--link); }
+.size-option .check { width: 18px; height: 18px; display: inline-flex; }
+.size-option .check .icon { width: 18px; height: 18px; }
+.size-note { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--text-muted); }
+
+.size-dialog {
+    position: fixed; z-index: 31; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: min(360px, calc(100vw - 32px)); padding: 20px;
+    background: var(--surface); color: var(--text);
+    border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow);
+    -webkit-user-select: text; user-select: text;
+}
+.size-dialog h2 { margin: 0 0 8px; font-size: 20px; }
+.size-dialog label { display: block; font-size: 14px; color: var(--text-muted); margin-bottom: 10px; }
+.custom-row { display: flex; align-items: center; gap: 10px; }
+.custom-row input {
+    width: 96px; padding: 8px 10px; font: inherit; font-size: 20px; font-weight: 700;
+    color: var(--text); background: var(--bg); border: 2px solid var(--border); border-radius: 8px;
+    font-variant-numeric: tabular-nums;
+}
+.custom-row input:focus { outline: none; border-color: var(--accent); }
+.custom-row input[aria-invalid="true"] { border-color: var(--error); }
+.custom-preview { font-size: 20px; font-weight: 700; color: var(--text-muted); }
+.field-error { margin: 10px 0 0; font-size: 14px; font-weight: 600; color: var(--error); }
+.dialog-buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+.btn-secondary { background: var(--surface-2); color: var(--text); }
+
 .btn:focus-visible, .icon-btn:focus-visible, .toc-link:focus-visible, .docs-main a:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
 }
 
 /* ========================================================================== Board + tiles */
+/* Everything on the board scales with --n (tiles per side): the gap shrinks as the board grows,
+   --cell is one tile's width, and tile fonts are a fraction of --cell picked by label length.
+   The sizes are registered lengths, so they compute to plain px once on .board and tiles inherit a
+   number instead of re-evaluating the whole calc()/min()/env() chain in every tile's width, font and
+   transform. On a 16x16 board under 4x CPU throttling that halved style recalculation per move. */
+@property --board { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --gap { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --cell { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --step { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --tile-radius { syntax: '<length>'; inherits: true; initial-value: 0px; }
 .board {
+    --gap: clamp(2px, calc(var(--board) * 0.13 / (var(--n) + 1)), 14px);
+    --cell: calc((var(--board) - (var(--n) + 1) * var(--gap)) / var(--n));
+    --tile-radius: clamp(3px, calc(var(--cell) * 0.07), 6px);
+    --step: calc(var(--cell) + var(--gap)); /* one cell over: tile positions are multiples of it */
     position: relative;
     width: var(--board);
     height: var(--board);
@@ -195,43 +280,55 @@ a { color: var(--link); }
     border-radius: var(--radius);
     padding: var(--gap);
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    grid-template-rows: repeat(4, 1fr);
+    grid-template-columns: repeat(var(--n), 1fr);
+    grid-template-rows: repeat(var(--n), 1fr);
     gap: var(--gap);
     touch-action: none;
     box-shadow: var(--shadow);
 }
+.board-pending .tile-layer, .board-pending .cell { visibility: hidden; } /* until the saved size is applied */
 
-.cell { background: var(--cell-bg); border-radius: 6px; }
+.cell { background: var(--cell-bg); border-radius: var(--tile-radius); }
 
-/* Tiles sit in a layer over the grid. Position is a transform built from --r/--c (set per tile
-   by GameBoard.razor), so a move only changes transform: the GPU slides it, no layout work. */
+/* Tiles sit in a layer over the grid. Each tile's position is an inline transform,
+   translate(calc(var(--step) * col), calc(var(--step) * row)), set by GameBoard.razor from a per-size
+   cache, so a move only changes transform: the GPU slides it, no layout work. Setting transform
+   directly (not per-tile custom properties) matters on big boards: transform is not inherited, so the
+   tile's children need no style recalc, and no tile gets its own copy of the custom property map.
+   (CSS containment and will-change: transform were measured on 16x16 too and did not help.) */
 .tile-layer { position: absolute; inset: var(--gap); pointer-events: none; }
 
 .tile {
     position: absolute;
     top: 0;
     left: 0;
-    width: calc((100% - 3 * var(--gap)) / 4);
-    height: calc((100% - 3 * var(--gap)) / 4);
-    transform: translate(calc(var(--c) * (100% + var(--gap))), calc(var(--r) * (100% + var(--gap))));
+    width: var(--cell);
+    height: var(--cell);
     transition: transform var(--slide) var(--ease-out);
     z-index: 1;
-    font-size: calc(var(--board) * 0.11);
+    font-size: calc(var(--cell) * 0.5);
 }
+/* Font by label length (GameBoard adds tl-N): the label fills about 85% of the tile at most. */
+.tl-3 { font-size: calc(var(--cell) * 0.44); }
+.tl-4 { font-size: calc(var(--cell) * 0.35); }
+.tl-5 { font-size: calc(var(--cell) * 0.29); }
+.tl-6 { font-size: calc(var(--cell) * 0.245); }
+.tl-7 { font-size: calc(var(--cell) * 0.21); }
+.tl-8, .tl-9, .tl-10 { font-size: calc(var(--cell) * 0.17); }
 .tile-retired { z-index: 0; }   /* merged-away halves slide in underneath the new tile */
 .tile-merged  { z-index: 2; }
 
 .tile-inner {
     width: 100%;
     height: 100%;
-    border-radius: 6px;
+    border-radius: var(--tile-radius);
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 800;
     line-height: 1;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
+    white-space: nowrap;
     font-variant-numeric: tabular-nums;
     background: var(--tile-bg);
     color: var(--tile-fg);
@@ -258,12 +355,12 @@ a { color: var(--link); }
 .tile-16    { --tile-bg: var(--tile-16-bg);    --tile-fg: var(--tile-16-fg); }
 .tile-32    { --tile-bg: var(--tile-32-bg);    --tile-fg: var(--tile-32-fg); }
 .tile-64    { --tile-bg: var(--tile-64-bg);    --tile-fg: var(--tile-64-fg); }
-.tile-128   { --tile-bg: var(--tile-128-bg);   --tile-fg: var(--tile-128-fg);   font-size: calc(var(--board) * 0.09); }
-.tile-256   { --tile-bg: var(--tile-256-bg);   --tile-fg: var(--tile-256-fg);   font-size: calc(var(--board) * 0.09); }
-.tile-512   { --tile-bg: var(--tile-512-bg);   --tile-fg: var(--tile-512-fg);   font-size: calc(var(--board) * 0.09); }
-.tile-1024  { --tile-bg: var(--tile-1024-bg);  --tile-fg: var(--tile-1024-fg);  font-size: calc(var(--board) * 0.07); }
-.tile-2048  { --tile-bg: var(--tile-2048-bg);  --tile-fg: var(--tile-2048-fg);  font-size: calc(var(--board) * 0.07); }
-.tile-super { --tile-bg: var(--tile-super-bg); --tile-fg: var(--tile-super-fg); font-size: calc(var(--board) * 0.06); }
+.tile-128   { --tile-bg: var(--tile-128-bg);   --tile-fg: var(--tile-128-fg); }
+.tile-256   { --tile-bg: var(--tile-256-bg);   --tile-fg: var(--tile-256-fg); }
+.tile-512   { --tile-bg: var(--tile-512-bg);   --tile-fg: var(--tile-512-fg); }
+.tile-1024  { --tile-bg: var(--tile-1024-bg);  --tile-fg: var(--tile-1024-fg); }
+.tile-2048  { --tile-bg: var(--tile-2048-bg);  --tile-fg: var(--tile-2048-fg); }
+.tile-super { --tile-bg: var(--tile-super-bg); --tile-fg: var(--tile-super-fg); }
 
 .tile-1024 .tile-inner { box-shadow: 0 0 18px 2px rgba(123, 87, 245, 0.35); }
 .tile-2048 .tile-inner { box-shadow: 0 0 24px 4px rgba(106, 61, 240, 0.5); }
@@ -500,6 +597,6 @@ a { color: var(--link); }
 /* ========================================================================== Reduced motion */
 @media (prefers-reduced-motion: reduce) {
     .tile { transition: none; }
-    .tile-inner, .overlay, .loading-tile { animation: none !important; }
-    .app-root, .docs-sidebar, .btn, .icon-btn { transition: none; }
+    .tile-inner, .overlay, .loading-tile, .title-flip { animation: none !important; }
+    .app-root, .docs-sidebar, .btn, .icon-btn, .new-game-caret .icon { transition: none; }
 }

@@ -19,6 +19,11 @@ public class GameBoardTests : AppTestContext
         return values;
     }
 
+    // A tile's position is an inline transform in multiples of --step (one cell plus a gap).
+    private static string Transform(int row, int col) => $"transform:translate(calc(var(--step)*{col}),calc(var(--step)*{row}))";
+    private static string Col(int col) => $"translate(calc(var(--step)*{col}),";
+    private static string Row(int row) => $",calc(var(--step)*{row}))";
+
     private static string Score(IRenderedComponent<GameBoard> cut) => cut.FindAll(".score-box .value")[0].TextContent;
     private static string Best(IRenderedComponent<GameBoard> cut) => cut.FindAll(".score-box .value")[1].TextContent;
 
@@ -160,7 +165,7 @@ public class GameBoardTests : AppTestContext
         var cut = Render<GameBoard>();
 
         cut.Find(".game").KeyDown(new KeyboardEventArgs { Key = "ArrowLeft" });
-        Assert.Contains("You win!", cut.Find(".overlay.win").TextContent);
+        Assert.Contains("You made 2048!", cut.Find(".overlay.win").TextContent);
 
         cut.Find(".overlay.win .btn").Click(); // Keep going
         Assert.Empty(cut.FindAll(".overlay"));
@@ -189,8 +194,7 @@ public class GameBoardTests : AppTestContext
         var cut = Render<GameBoard>();
 
         var tile = cut.Find(".tile.tile-8");
-        Assert.Contains("--r:1", tile.GetAttribute("style"));
-        Assert.Contains("--c:2", tile.GetAttribute("style"));
+        Assert.Equal(Transform(1, 2), tile.GetAttribute("style"));
         Assert.Equal("8", tile.QuerySelector(".tile-inner")!.TextContent);
     }
 
@@ -210,7 +214,7 @@ public class GameBoardTests : AppTestContext
         cut.Find(".game").KeyDown(new KeyboardEventArgs { Key = "ArrowRight" });
 
         var after = cut.Find(".tile.tile-8");
-        Assert.Contains("--c:3", after.GetAttribute("style"));
+        Assert.Contains(Col(3), after.GetAttribute("style"));
         // Same tile id = same @key, so Blazor keeps the element and the browser transitions its transform.
         Assert.Equal(id, after.GetAttribute("data-id"));
         Assert.DoesNotContain("tile-new", after.ClassName);
@@ -234,7 +238,7 @@ public class GameBoardTests : AppTestContext
         Assert.Equal("8", merged.TextContent.Trim());
         var retired = cut.FindAll(".tile.tile-retired");
         Assert.Equal(2, retired.Count);
-        Assert.All(retired, t => Assert.Contains("--c:0", t.GetAttribute("style")));
+        Assert.All(retired, t => Assert.Contains(Col(0), t.GetAttribute("style")));
         Assert.Single(cut.FindAll(".tile.tile-new"));
 
         // The next move drops the retired halves. The merged tile keeps its class (same element,
@@ -245,7 +249,7 @@ public class GameBoardTests : AppTestContext
         Assert.Empty(cut.FindAll(".tile.tile-retired"));
         var mergedAfter = cut.Find($".tile[data-id='{mergedId}']");
         Assert.Equal(mergedClass, mergedAfter.ClassName);
-        Assert.Contains("--r:3", mergedAfter.GetAttribute("style"));
+        Assert.EndsWith(Row(3), mergedAfter.GetAttribute("style"));
     }
 
     [Fact]
@@ -267,9 +271,9 @@ public class GameBoardTests : AppTestContext
         // elements), now targeting the merge cell, beneath the new tile.
         var retired = cut.FindAll(".tile.tile-retired");
         Assert.Equal(sourceIds, retired.Select(t => t.GetAttribute("data-id")).Order().ToArray());
-        Assert.All(retired, t => Assert.Contains("--r:0;--c:0", t.GetAttribute("style")));
+        Assert.All(retired, t => Assert.Equal(Transform(0, 0), t.GetAttribute("style")));
         var merged = cut.Find(".tile.tile-merged");
-        Assert.Contains("--r:0;--c:0", merged.GetAttribute("style"));
+        Assert.Equal(Transform(0, 0), merged.GetAttribute("style"));
         Assert.DoesNotContain(merged.GetAttribute("data-id"), sourceIds);
     }
 

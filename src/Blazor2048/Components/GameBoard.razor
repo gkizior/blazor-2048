@@ -1,13 +1,21 @@
+@using System.Globalization
 @inject BestScoreStore BestScores
+@inject BoardSizeStore BoardSizes
 @inject Game game
 
-<div class="game" tabindex="0" @ref="gameRoot"
+@* The easter egg: the game is named after its target tile, 2^(N+7) (8192 on 6x6). *@
+<PageTitle>@sizeText.Target</PageTitle>
+
+<div class="game" tabindex="0" @ref="gameRoot" style="@sizeText.Style"
      @onkeydown="OnKeyDown"
      @ontouchstart="OnTouchStart"
      @ontouchend="OnTouchEnd"
      @ontouchmove:preventDefault="true">
     <header class="top">
-        <h1 class="title">2048</h1>
+        <h1 class="title @(ready ? null : "title-pending")" style="@sizeText.TitleStyle">
+            @* Keyed by the target, so a size change mounts a new span and its flip-in runs once. *@
+            <span @key="game.WinningTile" class="@(animateTitle ? "title-num title-flip" : "title-num")">@sizeText.Target</span>
+        </h1>
         <div class="scores">
             <div class="score-box">
                 <span class="label">Score</span>
@@ -21,28 +29,33 @@
     </header>
 
     <div class="sub">
-        <p class="hint">Join the tiles, get to <strong>2048!</strong></p>
+        <p class="hint">Join the tiles, get to <strong>@(sizeText.Target)!</strong></p>
         <div class="actions">
             <a class="icon-btn docs-btn" href="docs" aria-label="Open the docs" title="Docs"><Icon Name="book" /></a>
             <ThemeToggle />
-            <button class="btn new-game" @onclick="NewGame">New Game</button>
+            <NewGameButton Size="game.Size" OnNewGame="StartNewGame" OnOpenChanged="SetMenuOpen" />
         </div>
     </div>
 
-    <div class="board" aria-label="2048 board" data-moves="@moves">
-        @* The 16 background cells never change, so they live in a child component that is not re-rendered. *@
+    <div class="board @(ready ? null : "board-pending")" aria-label="@sizeText.BoardLabel"
+         data-moves="@moves" data-size="@game.Size">
+        @* The background cells only change with the board size, so they live in a child component that skips other renders. *@
         <BoardCells Count="@(game.Size * game.Size)" />
 
         @* Tiles live in one flat, id-ordered list keyed by tile id, so Blazor only inserts and removes
-           elements and never reorders them. Moving a tile only changes its --r/--c custom properties,
-           so the CSS transition retargets from wherever the tile is. A tile's class is fixed for its
-           whole life (see ClassFor), so a spawn or pop animation is never cut short by the next move. *@
+           elements and never reorders them. Moving a tile only changes its inline transform, so the
+           CSS transition retargets from wherever the tile is. A tile's class is fixed for its
+           whole life (see InfoFor), so a spawn or pop animation is never cut short by the next move. *@
         <div class="tile-layer">
-            @foreach (var tile in game.RenderTiles)
+            @{ var tiles = game.RenderTiles; }
+            @for (var i = 0; i < tiles.Count; i++)
             {
-                <div @key="tile.Id" class="@ClassFor(tile)" style="@PositionStyle(tile)"
-                     data-id="@tile.Id" data-row="@tile.Row" data-col="@tile.Col" data-value="@tile.Value">
-                    <div class="tile-inner">@tile.Value</div>
+                var tile = tiles[i];
+                var info = InfoFor(tile);
+                <div @key="info" class="@(tile.IsRetired ? info.RetiredClass : info.Class)" style="@positions[tile.Row * game.Size + tile.Col]"
+                     data-id="@info.IdText" data-row="@Numbers[tile.Row]" data-col="@Numbers[tile.Col]" data-value="@info.ValueText"
+                     title="@info.Title">
+                    <div class="tile-inner">@info.Label</div>
                 </div>
             }
         </div>
@@ -57,7 +70,7 @@
         else if (game.HasWon && !game.KeepPlaying)
         {
             <div class="overlay win">
-                <p>You win!</p>
+                <p>You made @sizeText.Target!</p>
                 <div class="overlay-buttons">
                     <button class="btn" @onclick="KeepGoing">Keep going</button>
                     <button class="btn" @onclick="NewGame">New Game</button>
@@ -72,20 +85,59 @@
 @code {
     private const double MinSwipeDistance = 24;
 
-    // "--r:R;--c:C" for every cell, built once: no per-render string formatting.
-    private static readonly string[] Positions =
-        Enumerable.Range(0, 16).Select(i => $"--r:{i / 4};--c:{i % 4}").ToArray();
+    // Strings that only depend on the board size, built once per size so a render formats nothing:
+    // each cell's inline transform (see .tile-layer in app.css), the board's style and accessible name, and the game's "name" (the
+    // target tile, 2^(N+7): the easter egg from spec 011).
+    private string[] positions = [];
+    private SizeText sizeText = null!;
+
+    // The Game is scoped: coming back from the docs it may already be at another size.
+    protected override void OnInitialized() => ApplySize(game.Size);
+
+    private sealed record SizeText(string Target, string Style, string TitleStyle, string BoardLabel)
+    {
+        public static SizeText For(int n)
+        {
+            var target = BoardSize.WinningTile(n).ToString(CultureInfo.InvariantCulture);
+            return new(target, $"--n:{n}", $"--digits:{target.Length}", $"{target} board, {n} by {n}");
+        }
+    }
+
+    private static string[] BuildPositions(int n)
+    {
+        var p = new string[n * n];
+        for (var i = 0; i < p.Length; i++) p[i] = $"transform:translate(calc(var(--step)*{i % n}),calc(var(--step)*{i / n}))";
+        return p;
+    }
+
+    // "0" … "max": row and column numbers for data-row/data-col without formatting.
+    private static readonly string[] Numbers = Enumerable.Range(0, BoardSize.Max).Select(i => i.ToString(CultureInfo.InvariantCulture)).ToArray();
 
     private ElementReference gameRoot;
     private int best;
     private int moves; // successful moves this session (exposed as data-moves for E2E checks)
     private (double X, double Y)? touchStart;
+    private bool ready;    // the saved board size has been applied (the board stays hidden until then)
+    private bool menuOpen; // the size menu or custom dialog is open: board moves are paused
+    private bool animateTitle; // set by a size change in play, so the first paint does not animate
 
-    // Class per tile id, decided when the tile first appears and then kept: "tile-new"/"tile-merged"
-    // start their CSS animation once, and an unchanged class means the next move cannot restart or
-    // cancel it. Entries for tiles that are gone are pruned after each move.
-    private readonly Dictionary<int, string> tileClasses = new();
-    private readonly Dictionary<int, string> retiredClasses = new();
+    // Per tile id: its class (decided when the tile first appears and then kept: "tile-new" and
+    // "tile-merged" start their CSS animation once, and an unchanged class means the next move cannot
+    // restart or cancel it), its retired class, and its text, so a render formats nothing. Entries for
+    // tiles that are gone are pruned in batches.
+    private sealed class TileInfo(string @class, string idText, string valueText, string label, string? title)
+    {
+        public string Class { get; } = @class;
+        private string? retiredClass;
+        public string RetiredClass => retiredClass ??= Class + " tile-retired"; // only built for tiles that merge away
+        public string IdText { get; } = idText;
+        public string ValueText { get; } = valueText;
+        public string Label { get; } = label;
+        public string? Title { get; } = title;
+    }
+    private readonly Dictionary<int, TileInfo> tileInfo = new();
+    private readonly HashSet<int> aliveIds = new();
+    private readonly List<int> deadIds = new();
 
     // Render only when something visible changed: no-op moves, other keys and the re-render Blazor
     // would do after the awaited best-score save are skipped.
@@ -105,8 +157,13 @@
         // Focus the game so arrow keys work right away on desktop.
         await gameRoot.FocusAsync(preventScroll: true);
 
-        best = await BestScores.LoadAsync();
-        if (best > 0) Invalidate();
+        // Switch to the last chosen size (4x4 on a first visit). The Game is scoped, so coming back
+        // from the docs finds it already at that size and keeps the game in progress.
+        var size = await BoardSizes.LoadAsync();
+        if (size != game.Size) ResetBoard(size);
+        best = await BestScores.LoadAsync(game.Size);
+        ready = true;
+        Invalidate();
     }
 
     private void Invalidate()
@@ -128,7 +185,7 @@
             _ => null,
         };
 
-        if (dir is { } d) await MoveAsync(d);
+        if (dir is { } d && !menuOpen) await MoveAsync(d);
     }
 
     private void OnTouchStart(TouchEventArgs e)
@@ -138,7 +195,7 @@
 
     private async Task OnTouchEnd(TouchEventArgs e)
     {
-        if (touchStart is not { } start || e.ChangedTouches.Length == 0) return;
+        if (touchStart is not { } start || e.ChangedTouches.Length == 0 || menuOpen) return;
         touchStart = null;
 
         var dx = e.ChangedTouches[0].ClientX - start.X;
@@ -164,17 +221,44 @@
         {
             best = game.Score;
             // The board is already rendered when this awaits; the save does not need another render.
-            await BestScores.SaveAsync(best);
+            await BestScores.SaveAsync(game.Size, best);
         }
     }
 
-    private void NewGame()
+    private void NewGame() => ResetBoard(game.Size);
+
+    /// <summary>New game from the split button: any size, then focus back on the board for arrow keys.</summary>
+    private async Task StartNewGame(int size)
     {
-        game.NewGame();
-        tileClasses.Clear();
-        retiredClasses.Clear();
+        var sizeChanged = size != game.Size;
+        ResetBoard(size);
+        menuOpen = false;
+        if (sizeChanged)
+        {
+            animateTitle = true;
+            best = await BestScores.LoadAsync(size);
+            dirty = true;
+            await BoardSizes.SaveAsync(size);
+        }
+        await gameRoot.FocusAsync(preventScroll: true);
+    }
+
+    private void ResetBoard(int size)
+    {
+        if (size == game.Size) game.NewGame();
+        else game.NewGame(size);
+        if (positions.Length != size * size) ApplySize(size);
+        tileInfo.Clear();
         dirty = true;
     }
+
+    private void ApplySize(int size)
+    {
+        positions = BuildPositions(size);
+        sizeText = SizeText.For(size);
+    }
+
+    private void SetMenuOpen(bool open) => menuOpen = open;
 
     private void KeepGoing()
     {
@@ -182,30 +266,54 @@
         dirty = true;
     }
 
-    private string ClassFor(Tile tile)
+    private TileInfo InfoFor(Tile tile)
     {
-        if (!tileClasses.TryGetValue(tile.Id, out var css))
+        if (!tileInfo.TryGetValue(tile.Id, out var info))
         {
-            css = $"tile {TileClass(tile.Value)}" + (tile.IsMerged ? " tile-merged" : tile.IsNew ? " tile-new" : "");
-            tileClasses[tile.Id] = css;
+            var label = Label(tile.Value);
+            var css = $"tile {TileClass(tile.Value)} tl-{label.Length}" + (tile.IsMerged ? " tile-merged" : tile.IsNew ? " tile-new" : "");
+            var full = ValueText(tile.Value);
+            tileInfo[tile.Id] = info = new TileInfo(css, tile.Id.ToString(CultureInfo.InvariantCulture), full, label,
+                IsCompact(tile.Value) ? full : null);
         }
-        if (!tile.IsRetired) return css;
-
-        if (!retiredClasses.TryGetValue(tile.Id, out var retired))
-            retiredClasses[tile.Id] = retired = css + " tile-retired";
-        return retired;
+        return info;
     }
 
     private void PruneTileClasses()
     {
-        if (tileClasses.Count <= 2 * game.Size * game.Size) return; // prune in batches, not every move
-        var alive = game.RenderTiles.Select(t => t.Id).ToHashSet();
-        foreach (var id in tileClasses.Keys.Where(id => !alive.Contains(id)).ToList()) tileClasses.Remove(id);
-        foreach (var id in retiredClasses.Keys.Where(id => !alive.Contains(id)).ToList()) retiredClasses.Remove(id);
+        if (tileInfo.Count <= 2 * game.Size * game.Size) return; // prune in batches, not every move
+        aliveIds.Clear();
+        var tiles = game.RenderTiles;
+        for (var i = 0; i < tiles.Count; i++) aliveIds.Add(tiles[i].Id);
+        deadIds.Clear();
+        foreach (var id in tileInfo.Keys) if (!aliveIds.Contains(id)) deadIds.Add(id);
+        foreach (var id in deadIds) tileInfo.Remove(id);
     }
 
-    private string PositionStyle(Tile tile) =>
-        game.Size == 4 ? Positions[tile.Row * 4 + tile.Col] : $"--r:{tile.Row};--c:{tile.Col}";
+    // Big values on small cells get a compact label so they stay readable on a phone: from 16384 on
+    // 8x8 to 11x11 (16384 -> 16K, 131072 -> 128K), and from 1024 on 12x12 and up, where a phone cell
+    // is 26 px or less (1024 -> 1K). 1048576 -> 1M. The full value stays in data-value and the title.
+    private string Label(int value) => TileLabel(value, game.Size);
+
+    private bool IsCompact(int value) => value >= CompactFrom(game.Size);
+
+    private static int CompactFrom(int size) => size >= 12 ? 1024 : size >= 8 ? 16384 : int.MaxValue;
+
+    // Tile values are powers of two, so their texts are cached by exponent.
+    private static readonly string?[] FullTexts = new string?[32];
+    private static readonly string?[] CompactTexts = new string?[32];
+
+    private static string ValueText(int value) =>
+        value > 0 && int.IsPow2(value)
+            ? FullTexts[int.Log2(value)] ??= value.ToString(CultureInfo.InvariantCulture)
+            : value.ToString(CultureInfo.InvariantCulture);
+
+    public static string TileLabel(int value, int size)
+    {
+        if (value < CompactFrom(size)) return ValueText(value);
+        var compact = value >= 1 << 20 ? $"{value >> 20}M" : $"{value >> 10}K";
+        return int.IsPow2(value) ? CompactTexts[int.Log2(value)] ??= compact : compact;
+    }
 
     private static string TileClass(int value) => value <= 2048 ? $"tile-{value}" : "tile-super";
 }
