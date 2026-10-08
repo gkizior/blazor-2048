@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<!-- Source for docs/images/social-preview.png (1280x640). Regenerate with:
+     google-chrome --headless --hide-scrollbars --window-size=1280,640 --screenshot=docs/images/social-preview.png scripts/social-preview.html -->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<style>
+  html, body { margin: 0; width: 1280px; height: 640px; overflow: hidden; }
+  body {
+    font-family: Inter, "Segoe UI", system-ui, sans-serif;
+    background:
+      radial-gradient(900px 500px at 85% 20%, rgba(109, 74, 255, 0.35), transparent 60%),
+      radial-gradient(700px 500px at 0% 100%, rgba(255, 138, 76, 0.22), transparent 60%),
+      #121318;
+    color: #eceef3;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 88px; box-sizing: border-box;
+  }
+  .text { display: flex; flex-direction: column; gap: 18px; }
+  .title { font-size: 168px; font-weight: 900; letter-spacing: -0.05em; line-height: 0.9;
+           background: linear-gradient(135deg, #ffad66, #f2603d 35%, #d63384 65%, #7b57f5); -webkit-background-clip: text; color: transparent; }
+  .subtitle { font-size: 40px; font-weight: 700; letter-spacing: -0.01em; }
+  .tags { display: flex; gap: 10px; flex-wrap: wrap; max-width: 560px; }
+  .tag { font-size: 20px; font-weight: 600; color: #cfc8ff; background: rgba(109, 74, 255, 0.18); border: 1px solid rgba(143, 120, 255, 0.45); padding: 6px 14px; border-radius: 999px; }
+  .url { font-size: 22px; color: #a3a8b5; }
+  .board { width: 420px; height: 420px; padding: 14px; box-sizing: border-box; background: #262a33; border-radius: 22px;
+           display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; box-shadow: 0 30px 80px rgba(0,0,0,0.5); transform: rotate(-4deg); }
+  .t { border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 34px; letter-spacing: -0.02em; }
+  .e { background: rgba(0,0,0,0.22); }
+  .v2 { background: #3e4556; color: #e7e9ee; } .v4 { background: #505971; color: #f2f4f8; }
+  .v8 { background: #ffad66; color: #3a1a00; } .v16 { background: #ff8a4c; color: #331200; }
+  .v32 { background: #f2603d; color: #2a0a00; } .v64 { background: #c9302c; color: #fff; }
+  .v128 { background: #f7d154; color: #3a2c00; font-size: 28px; } .v256 { background: #f4c03a; color: #3a2a00; font-size: 28px; }
+  .v512 { background: #eeab22; color: #2f1f00; font-size: 28px; } .v1024 { background: #7b57f5; color: #fff; font-size: 23px; }
+  .v2048 { background: #6a3df0; color: #fff; font-size: 23px; box-shadow: 0 0 28px 6px rgba(106,61,240,0.6); }
+</style>
+</head>
+<body>
+  <div class="text">
+    <div class="title">2048</div>
+    <div class="subtitle">Blazor WebAssembly · .NET 10</div>
+    <div class="tags">
+      <span class="tag">PWA</span><span class="tag">Dark mode</span><span class="tag">Animations</span>
+      <span class="tag">Docs</span><span class="tag">xUnit v3 · bUnit · Playwright</span>
+    </div>
+    <div class="url">gkizior.github.io/blazor-2048</div>
+  </div>
+  <div class="board">
+    <div class="t v2">2</div><div class="t v4">4</div><div class="t v8">8</div><div class="t v16">16</div>
+    <div class="t e"></div><div class="t v64">64</div><div class="t v32">32</div><div class="t v128">128</div>
+    <div class="t e"></div><div class="t v2">2</div><div class="t v512">512</div><div class="t v256">256</div>
+    <div class="t v4">4</div><div class="t e"></div><div class="t v1024">1024</div><div class="t v2048">2048</div>
+  </div>
+</body>
+</html>
