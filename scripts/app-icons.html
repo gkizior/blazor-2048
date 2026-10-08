@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<!-- Source for the app icons: the purple 2048 tile from the palette (--tile-2048-bg #6a3df0), in the
+     style of docs/images/social-preview.png. Each variant is picked with the URL hash and rendered at
+     its size with a transparent background, for example:
+       chrome --headless --hide-scrollbars --default-background-color=00000000 --window-size=512,512 \
+         --screenshot=src/Blazor2048/wwwroot/icon-512.png "scripts/app-icons.html#any"
+     Variants: #any (rounded tile, transparent corners: favicon.png, icon-192.png, icon-512.png),
+     #full (full-bleed square: apple-touch-icon.png; iOS rounds it), #maskable (full bleed, text inside
+     the 80% safe zone: icon-maskable-*.png). favicon.ico packs 16/32/48 px renders of #any.
+     specs/012-purple-app-icons has the full list of sizes. -->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<style>
+  html, body { margin: 0; width: 100vw; height: 100vh; overflow: hidden; background: transparent; }
+  body { display: flex; align-items: center; justify-content: center; font-family: Inter, "Segoe UI", system-ui, sans-serif; }
+  .tile {
+    box-sizing: border-box; width: 100vw; height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 800; letter-spacing: -0.04em; line-height: 1;
+    /* The 2048 tile exactly as the game and the social preview draw it: flat --tile-2048-bg. */
+    background: #6a3df0;
+  }
+  .any .tile { width: 92vw; height: 92vh; border-radius: 18vw; box-shadow: 0 0 4vw rgba(106, 61, 240, 0.45); }
+  .any .tile span { font-size: 30vw; }
+  .full .tile span { font-size: 28vw; }
+  .maskable .tile span { font-size: 22vw; } /* inside the central 80% circle */
+  /* Tiny favicons: tighter, heavier text so "2048" stays legible at 16-32 px. */
+  .tiny .tile { width: 100vw; height: 100vh; border-radius: 20vw; box-shadow: none; }
+  .tiny .tile span { font-size: 36vw; font-weight: 900; letter-spacing: -0.06em; }
+</style>
+</head>
+<body>
+  <div class="tile"><span>2048</span></div>
+  <script>
+    // The variant comes from the hash (default "any"); "tiny" is "any" tuned for 16-48 px.
+    const v = (location.hash.slice(1) || 'any').split(',');
+    document.body.classList.add(...v);
+  </script>
+</body>
+</html>
