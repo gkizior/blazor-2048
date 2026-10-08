@@ -12,33 +12,34 @@ rules:
 |---|---|
 | `Min` / `Max` | 2 and 16: the playable range (16 is the measured limit, see below) |
 | `IsValid(n)` | 2…16: what is saved as the last size and gets a best score |
-| `IsSecret(n)` | 0 and 1: the secret instant-win boards (see below) |
+| `IsSecret(n)` | 1 only: the secret instant-win board (see below) |
 | `IsSupported(n)` | `IsValid` or `IsSecret`: any size a `Game` can start |
 | `Default` | 4 (the classic board, used when nothing is saved) |
 | `Presets` | 4…10, the sizes in the New Game menu |
-| `TryParse(text, out size, out error)` | Validates the Custom… input: whole numbers 0…16, with a message for empty, negatives, too big, decimals and non-numbers (the messages only ever mention 2 to 16) |
-| `WinningTile(n)` | The target, 2^(N+7): 128 (0×0), 256 (1×1), 512 (2×2), 1024 (3×3), **2048 (4×4)**, 4096 … 131072 (10×10) … 8388608 (16×16) |
+| `TryParse(text, out size, out error)` | Validates the Custom… input: whole numbers 1…16, with a message for empty, 0, negatives, too big, decimals and non-numbers (the messages only ever mention 2 to 16) |
+| `WinningTile(n)` | The target, 2^(N+7): 256 (1×1), 512 (2×2), 1024 (3×3), **2048 (4×4)**, 4096 … 131072 (10×10) … 8388608 (16×16) |
 
 The target is also the game's "name": the UI shows it wherever the classic game says 2048 (the easter
 egg). 2^(N+7) fits an `int` up to N = 23, so `WinningTile` cannot overflow at `Max`. A 2×2 board
 can never reach its 512 (its largest possible tile is 32) and 1024 is the largest tile a 3×3 board can
 hold, which is part of the joke.
 
-### Secret sizes: 1×1 and 0×0
+### The secret 1×1 board
 
-The original request ruled out "1x1 tho or 0 or neg"; a later one reversed that for 1 and 0 only:
-"It would be funny to allow size of 1 and 0. Where you just win right away"
-([spec 011, User Story 7](../specs/011-board-sizes/spec.md)). Custom… accepts them, the menu
-doesn't list them and the messages never mention them.
+The original request ruled out "1x1 tho or 0 or neg". A later one allowed 1 and 0 ("It would be
+funny to allow size of 1 and 0. Where you just win right away"), and the next narrowed it to 1:
+"Maybe not zero still but 1 should just win immediately"
+([spec 011, User Story 7](../specs/011-board-sizes/spec.md)). Custom… accepts 1, the menu doesn't
+list it and the messages never mention it.
 
-- `NewGame()` on a 1×1 board puts one tile in the only cell with the target value, 256, flagged
-  new so it pops in. On 0×0 there is nothing at all. In both cases `HasWon` and `IsGameOver` are
-  set at once, nothing spawns, and `IsInstantWin` is true.
-- Nothing divides by N or indexes an empty array: the flat arrays and line buffers simply have length
-  0 or 1, `Move` returns false (the game is over), `CanMove` and `AddRandomTile` return false, and
-  `Tiles`/`RenderTiles` are empty (0×0) or hold the single tile (1×1). `Continue()` does nothing,
-  since there is nothing to continue.
-- Negatives (including `-0`), decimals such as `1.5`, and text are still rejected.
+- `NewGame()` on a 1×1 board puts one tile in the only cell with the target value, 256, flagged new
+  so it pops in. `HasWon` and `IsGameOver` are set at once, nothing spawns, and `IsInstantWin` is
+  true.
+- With one cell the flat arrays and line buffers have length 1: `Move` returns false (the game is
+  over), `CanMove` and `AddRandomTile` return false, and `Tiles`/`RenderTiles` hold the single tile.
+  `Continue()` does nothing, since there is nothing to continue.
+- 0 is not a size: `TryParse` answers "A 0×0 board has nothing to play." and `Game` throws for it.
+  Negatives (including `-0`), decimals such as `1.5`, and text are rejected as before.
 
 Why 16: the tile labels on a 390 px wide phone are the limit, not speed. Cells are about 26 px at
 12×12, 19.5 px at 16×16 and 15.6 px at 20×20; with compact labels (`16K`) 16×16 is still readable,
@@ -55,7 +56,7 @@ Why 16: the tile labels on a 390 px wide phone are the limit, not speed. Cells a
 | `Score` | Sum of every merged tile's value. |
 | `WinningTile` | The target for this size (see above). |
 | `HasWon` / `KeepPlaying` | Reached the target / chose "Keep going". |
-| `IsInstantWin` | A secret 1×1 or 0×0 board: won and over before the first move. |
+| `IsInstantWin` | The secret 1×1 board: won and over before the first move. |
 | `IsGameOver` | No empty cells and no equal neighbours. |
 | `Tiles` | Live tiles with stable ids, ordered by id (a new list; for tests). |
 | `RetiredTiles` | Tiles merged away by the last move, positioned on their merge target. |

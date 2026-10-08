@@ -42,7 +42,7 @@
 
 ## Phase 7: Only 1x1 (fourth follow-up)
 
-- [x] T020 Spec update: "Maybe not zero still but 1 should just win immediately"; 0x0 dropped — (spec update commit)
-- [ ] T021 Engine and UI: 1 is the only secret size; 0 rejected again; 0x0 code removed
-- [ ] T022 [P] Tests: 0 and -1 rejected, 1 an instant win (xUnit, bUnit, Playwright)
+- [x] T020 Spec update: "Maybe not zero still but 1 should just win immediately"; 0x0 dropped — [`ed07c00`](https://github.com/gkizior/blazor-2048/commit/ed07c00)
+- [x] T021 Engine and UI: 1 is the only secret size; 0 rejected again; 0x0 code removed — [`9688326`](https://github.com/gkizior/blazor-2048/commit/9688326)
+- [x] T022 [P] Tests: 0 and -1 rejected, 1 an instant win (xUnit, bUnit, Playwright) — [`9688326`](https://github.com/gkizior/blazor-2048/commit/9688326)
 - [ ] T023 Docs updated; deploy verified live; 1x1 screenshot
