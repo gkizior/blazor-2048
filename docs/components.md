@@ -56,7 +56,18 @@ sequenceDiagram
   title `<span>` (keyed by the target), whose `title-flip` animation turns the new number in once.
   Long numbers shrink the title (`--digits`). The static loading screen, `index.html`'s initial
   `<title>`, the manifest, the docs and the repo keep "2048"/"Blazor 2048".
-- **Overlays:** "Game over!" and "You made {target}!" (with "Keep going") sit above the board.
+- **Secret tiny boards:** Custom… also takes 1 and 0 (not in the menu, never mentioned by the
+  dialog). 1×1 is named 256 and opens with its only tile already 256: "You made 256! One tile,
+  zero moves. Speedrun complete." 0×0 is named 128, shows an empty board and says "You won by not
+  playing. No tiles, no moves, no regrets." The hint plays along ("Join the tile, get to 256!",
+  "No tiles to join, get to 128!"). The win screen waits a beat so the 256 can pop in, and offers
+  **Play again** (same tiny board, instant win again) and **Back to N×N** (the last real size).
+  The empty board is laid out like a 1×1 board (`--n:1`), so the CSS never divides by zero. Keys
+  and swipes do nothing. These boards are **not remembered**: the size is not saved (a reload starts
+  the last real size; a hand-edited `blazor2048.size` of 0 or 1 falls back to 4x4) and there is no
+  best score (the Best box shows "–", and real sizes' bests are untouched).
+- **Overlays:** "Game over!" and "You made {target}!" (with "Keep going") sit above the board; the
+  secret tiny boards have their own win screen (above).
 - **Paused while choosing:** while the size menu or dialog is open, board keys and swipes are ignored.
 - **Input is never blocked.** There are no timers or "animation in progress" flags. A move during an
   animation is applied immediately; CSS retargets the tiles from wherever they are.

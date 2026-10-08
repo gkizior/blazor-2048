@@ -20,6 +20,7 @@ Play it on your iPhone straight from Safari — no Mac, no App Store, no fees.
 - Bigger boards from the New Game split button: 5×5 to 10×10, or any custom size from 2×2 to 16×16
   (always square), each with its own best score; the last size is remembered
 - A small easter egg: the game is named after its target, so 6×6 is "8192" and 10×10 is "131072"
+  (and Custom… hides a couple of boards you win without playing)
 - Swipe on touch screens, arrow keys (or WASD) on desktop
 - Smooth CSS animations: tiles slide, merges pop, new tiles scale in; input is never blocked,
   and `prefers-reduced-motion` is respected

@@ -29,9 +29,13 @@ Plain xUnit tests with no UI.
 - **Allocations:** after a warm-up, 2000 moves plus reading `RenderTiles` allocate under one byte
   per move on 4x4, 10x10 and the largest board (`GC.GetAllocatedBytesForCurrentThread()`).
 - **Validation** (`BoardSizeTests`): `BoardSize.TryParse` accepts whole numbers 2…Max (spaces,
-  leading zeros, `+5`) and rejects 1, 0, negatives, decimals (`7.5`, `6,5`), words, empty input and
-  huge numbers, each with a message that names the allowed range; the targets 512…131072; no
-  overflow at the largest size.
+  leading zeros, `+5`) and the secret 0 and 1, and rejects negatives (`-1`, `-0`), decimals (`1.5`,
+  `7.5`, `6,5`), words, empty input and huge numbers, each with a message that names the allowed
+  range (2 to 16); the targets 128…131072; no overflow at the largest size; 0 and 1 are the only
+  secret sizes and are not presets.
+- **Secret sizes** (`SecretSizesTests`): 1×1 holds one 256 tile and 0×0 is empty, both already won
+  and over; no move changes anything or throws; `Continue` is a no-op; replaying gives the 1×1 tile
+  a new id; switching between tiny and real sizes both ways; `SetBoard` on tiny boards.
 - **Icons** (`AppIconTests`): every manifest icon exists at its declared size, the maskable icons
   are declared, `favicon.ico` holds 16/32/48 px images, and the service worker cache has a revision.
 - **Docs generator:** Markdown to HTML, Mermaid blocks to `<img>` pairs, link rewriting, headings,
@@ -53,11 +57,18 @@ Board sizes (`BoardSizeUiTests`): the split button's ARIA attributes; the menu's
 state and roving focus (which element `FocusAsync` targeted is checked against the `@ref` ids bUnit
 prints); ArrowUp/ArrowDown wrapping, Home/End, Escape returning focus to the caret, Tab and the
 backdrop closing it; board keys ignored while the menu or dialog is open; the Custom… dialog's
-inline errors (`role="alert"`, `aria-invalid`, `aria-describedby`) for 1, 0, -5, `abc`, `7.5`, empty
-and too big, and a valid 12; Cancel/Escape; the saved size restored and invalid saved sizes falling
+inline errors (`role="alert"`, `aria-invalid`, `aria-describedby`) for -1, -5, `abc`, `1.5`, `7.5`,
+empty and too big, and a valid 12; Cancel/Escape; the saved size restored and invalid saved sizes falling
 back to 4x4; best scores per size and the legacy 4x4 key migrated; the name easter egg (title,
 `PageTitle`, hint, accessible name, win message per size, the flip only on a size change); compact
-labels; and that moves re-render neither the button nor the cells.
+labels; that moves re-render neither the button nor the cells; and that a best score read that
+completes late (a pending interop result) still shows.
+
+Secret sizes (`SecretSizesUiTests`): 1×1 and 0×0 from Custom… (tile, cells, title, `PageTitle`,
+hint, accessible name, `--n:1` for the empty board, the win screen's wording and buttons, no "Keep
+going", no "Game over!"); keys and swipes do nothing; neither size is saved nor gets a best; Play
+again and Back to N×N; the menu still lists only the presets and the dialog still says 2 to 16; a
+saved 0 or 1 is never restored.
 
 ## End-to-end tests: `tests/Blazor2048.E2ETests`
 
@@ -74,7 +85,10 @@ labels; and that moves re-render neither the button nor the cells.
   back on the board); the menu from the keyboard; click-outside; a custom 12x12; invalid custom input
   rejected inline; the size and the per-size best surviving a reload; rapid input on a filled 10x10
   board with no teleports or snaps; and a 10x10 board on a 390x844 phone that fits, has cells of at
-  least 24 px and moves on real touch swipes (CDP `Input.dispatchTouchEvent`).
+  least 24 px and moves on real touch swipes (CDP `Input.dispatchTouchEvent`). The secret sizes: 1x1
+  wins at once with a 256 tile, ignores keys and is not restored by a reload (back to 6x6); 0x0 on a
+  phone shows "You won by not playing." on an empty, square board that fits, ignores swipes and keys,
+  and "Back to 4×4" returns to a real game. Invalid input includes `-1` and `1.5`.
 - `AnimationE2ETests` samples every tile's box and opacity once per frame (a test-side
   `requestAnimationFrame` loop; the app ships no such code) and asserts that merge sources reach
   the target before they are removed, the merged tile stays invisible until they arrive, rapid

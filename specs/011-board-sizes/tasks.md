@@ -34,9 +34,9 @@
 
 ## Phase 6: Secret tiny boards (third follow-up)
 
-- [x] T014 Spec update: 1x1 and 0x0 win right away; history of the lower bound — (spec update commit)
-- [ ] T015 Engine: sizes 0 and 1 (`BoardSize.IsSecret`), instant win, zero-cell guards, target 2^(N+7) from N = 0
-- [ ] T016 UI: Custom… accepts 0 and 1; tiny-board win screens; not saved as last size, no best; empty board layout
-- [ ] T017 [P] Tests: xUnit engine and validation, bUnit dialog and win screens, Playwright 0, 1, -1 and 1.5
-- [ ] T018 Docs: easter egg section, BoardSize table
+- [x] T014 Spec update: 1x1 and 0x0 win right away; history of the lower bound — [`7e381b0`](https://github.com/gkizior/blazor-2048/commit/7e381b0)
+- [x] T015 Engine: sizes 0 and 1 (`BoardSize.IsSecret`), instant win, zero-cell guards, target 2^(N+7) from N = 0 — [`56a90c4`](https://github.com/gkizior/blazor-2048/commit/56a90c4)
+- [x] T016 UI: Custom… accepts 0 and 1; tiny-board win screens; not saved as last size, no best; empty board layout — [`e431a63`](https://github.com/gkizior/blazor-2048/commit/e431a63)
+- [x] T017 [P] Tests: xUnit engine and validation, bUnit dialog and win screens, Playwright 0, 1, -1 and 1.5 — [`56a90c4`](https://github.com/gkizior/blazor-2048/commit/56a90c4), [`e431a63`](https://github.com/gkizior/blazor-2048/commit/e431a63), [`9a7c26f`](https://github.com/gkizior/blazor-2048/commit/9a7c26f)
+- [x] T018 Docs: easter egg section, BoardSize table — (docs commit)
 - [ ] T019 Deploy verified live; screenshots of both win screens

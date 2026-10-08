@@ -83,6 +83,25 @@ sizes before and after optimizing, and pick the custom maximum from those number
 | `blazor2048.best.{N}x{N}` | Best score for that size |
 | `blazor2048.best` | The pre-011 4x4 best; copied to `blazor2048.best.4x4` on first read and left in place |
 
+### Secret sizes (third follow-up, User Story 7)
+
+| Size | Name | Board | Win screen | Remembered? |
+|---|---|---|---|---|
+| 1×1 | 256 (2^(1+7)) | one cell holding a 256 tile that pops in | "You made 256!" / "One tile, zero moves. Speedrun complete." | No |
+| 0×0 | 128 (2^(0+7)) | an empty board, laid out like 1×1 (`--n:1`) | "You won by not playing." / "No tiles, no moves, no regrets." | No |
+
+- `BoardSize.IsSecret` (0, 1) and `IsSupported` (`IsValid` or secret); `TryParse` accepts them but
+  every message keeps saying "2 to 16". `IsValid` stays 2…16, so `BoardSizeStore` never restores a
+  secret size.
+- `Game.NewGame` on a secret size sets `HasWon` and `IsGameOver` without spawning (1×1: the cell is
+  set to the target); `IsInstantWin` tells the UI. All loops already work on zero-length arrays.
+- `GameBoard` shows a dedicated overlay (checked before "Game over!"), with **Play again** and
+  **Back to N×N** (the last real size, tracked as `lastRealSize`), and no "Keep going". The overlay
+  fades in after 450 ms so the 256 tile pops first (no motion with reduced motion).
+- Persistence: choosing a secret size saves nothing. The last size stays the previous real one, so a
+  reload never reopens an instant win, and no best score is read or written (the Best box shows
+  "–").
+
 ## Measurements
 
 All numbers from `tools/PerfTrace` (headless Chromium, 30 moves at the **rapid** pace of 50 ms
