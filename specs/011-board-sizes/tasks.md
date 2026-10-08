@@ -29,5 +29,14 @@
 
 ## Phase 5: Polish
 
-- [x] T012 Docs: architecture, game engine, components, theming/animations, testing, diagrams — (docs commit)
-- [ ] T013 All suites green; deploy verified live, including a phone viewport
+- [x] T012 Docs: architecture, game engine, components, theming/animations, testing, diagrams — [`7630ee7`](https://github.com/gkizior/blazor-2048/commit/7630ee7)
+- [x] T013 All suites green; deploy verified live, including a phone viewport — CI [run 37799672887](https://github.com/gkizior/blazor-2048/actions/runs/37799672887), live check of `7630ee7`
+
+## Phase 6: Secret tiny boards (third follow-up)
+
+- [x] T014 Spec update: 1x1 and 0x0 win right away; history of the lower bound — (spec update commit)
+- [ ] T015 Engine: sizes 0 and 1 (`BoardSize.IsSecret`), instant win, zero-cell guards, target 2^(N+7) from N = 0
+- [ ] T016 UI: Custom… accepts 0 and 1; tiny-board win screens; not saved as last size, no best; empty board layout
+- [ ] T017 [P] Tests: xUnit engine and validation, bUnit dialog and win screens, Playwright 0, 1, -1 and 1.5
+- [ ] T018 Docs: easter egg section, BoardSize table
+- [ ] T019 Deploy verified live; screenshots of both win screens
