@@ -180,10 +180,10 @@ public class BoardSizeUiTests : AppTestContext
     }
 
     [Theory]
-    [InlineData("1", "Boards start at 2×2")]
-    [InlineData("0", "Boards start at 2×2")]
-    [InlineData("-5", "Boards start at 2×2")]
+    [InlineData("-1", "negative size")]
+    [InlineData("-5", "negative size")]
     [InlineData("abc", "is not a number")]
+    [InlineData("1.5", "without decimals")]
     [InlineData("7.5", "without decimals")]
     [InlineData("", "Enter a whole number")]
     [InlineData("999", "The largest board is")]
@@ -303,6 +303,22 @@ public class BoardSizeUiTests : AppTestContext
         Game.SetBoard(new int[9, 9].Also(b => { b[0, 0] = 2; b[0, 1] = 2; }));
         cut.Find(".game").KeyDown(new KeyboardEventArgs { Key = "ArrowLeft" });
         Assert.Contains("4", Saved("blazor2048.best.9x9"));
+    }
+
+    [Fact]
+    public void Best_Shows_After_A_Slow_Storage_Read()
+    {
+        // Regression: in the browser the best-score read completes after Blazor's render at the
+        // await, so the board must render again once the value arrives (bUnit's interop is
+        // synchronous unless a result is left pending, as here).
+        var cut = RenderReady();
+        var pending = JSInterop.Setup<string?>("localStorage.getItem", "blazor2048.best.6x6");
+
+        Pick(cut, "6");
+        Assert.Equal(6, Game.Size);
+        pending.SetResult("500");
+
+        cut.WaitForAssertion(() => Assert.Equal("500", Best(cut)));
     }
 
     [Fact]

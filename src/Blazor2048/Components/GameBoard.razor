@@ -23,13 +23,13 @@
             </div>
             <div class="score-box">
                 <span class="label">Best</span>
-                <span class="value">@best</span>
+                <span class="value">@(game.IsInstantWin ? "–" : best)</span>
             </div>
         </div>
     </header>
 
     <div class="sub">
-        <p class="hint">Join the tiles, get to <strong>@(sizeText.Target)!</strong></p>
+        <p class="hint">@sizeText.HintLead <strong>@(sizeText.Target)!</strong></p>
         <div class="actions">
             <a class="icon-btn docs-btn" href="docs" aria-label="Open the docs" title="Docs"><Icon Name="book" /></a>
             <ThemeToggle />
@@ -60,7 +60,27 @@
             }
         </div>
 
-        @if (game.IsGameOver)
+        @if (game.IsInstantWin)
+        {
+            @* The secret 1x1 and 0x0 boards (spec 011, User Story 7): won before the first move. *@
+            <div class="overlay win instant-win" data-size="@game.Size">
+                @if (game.Size == 1)
+                {
+                    <p>You made @sizeText.Target!</p>
+                    <p class="overlay-sub">One tile, zero moves. Speedrun complete.</p>
+                }
+                else
+                {
+                    <p>You won by not playing.</p>
+                    <p class="overlay-sub">No tiles, no moves, no regrets.</p>
+                }
+                <div class="overlay-buttons">
+                    <button class="btn" @onclick="NewGame">Play again</button>
+                    <button class="btn back-to-real" @onclick="BackToRealSize">Back to @(lastRealSize)×@(lastRealSize)</button>
+                </div>
+            </div>
+        }
+        else if (game.IsGameOver)
         {
             <div class="overlay lose">
                 <p>Game over!</p>
@@ -94,12 +114,14 @@
     // The Game is scoped: coming back from the docs it may already be at another size.
     protected override void OnInitialized() => ApplySize(game.Size);
 
-    private sealed record SizeText(string Target, string Style, string TitleStyle, string BoardLabel)
+    private sealed record SizeText(string Target, string Style, string TitleStyle, string BoardLabel, string HintLead)
     {
         public static SizeText For(int n)
         {
             var target = BoardSize.WinningTile(n).ToString(CultureInfo.InvariantCulture);
-            return new(target, $"--n:{n}", $"--digits:{target.Length}", $"{target} board, {n} by {n}");
+            // The empty 0x0 board is laid out like a 1x1 board, so the CSS never divides by zero.
+            var hint = n switch { 0 => "No tiles to join, get to", 1 => "Join the tile, get to", _ => "Join the tiles, get to" };
+            return new(target, $"--n:{Math.Max(n, 1)}", $"--digits:{target.Length}", $"{target} board, {n} by {n}", hint);
         }
     }
 
@@ -115,6 +137,7 @@
 
     private ElementReference gameRoot;
     private int best;
+    private int lastRealSize = BoardSize.Default; // the last playable size (2…Max): where "Back to N×N" goes from a secret board
     private int moves; // successful moves this session (exposed as data-moves for E2E checks)
     private (double X, double Y)? touchStart;
     private bool ready;    // the saved board size has been applied (the board stays hidden until then)
@@ -161,7 +184,8 @@
         // from the docs finds it already at that size and keeps the game in progress.
         var size = await BoardSizes.LoadAsync();
         if (size != game.Size) ResetBoard(size);
-        best = await BestScores.LoadAsync(game.Size);
+        if (BoardSize.IsValid(game.Size)) lastRealSize = game.Size;
+        best = game.IsInstantWin ? 0 : await BestScores.LoadAsync(game.Size);
         ready = true;
         Invalidate();
     }
@@ -236,9 +260,20 @@
         if (sizeChanged)
         {
             animateTitle = true;
-            best = await BestScores.LoadAsync(size);
-            dirty = true;
-            await BoardSizes.SaveAsync(size);
+            if (BoardSize.IsSecret(size))
+            {
+                // An instant win has no best score and is not remembered: a reload goes back to the
+                // last real size instead of winning again.
+                best = 0;
+                dirty = true;
+            }
+            else
+            {
+                lastRealSize = size;
+                best = await BestScores.LoadAsync(size);
+                dirty = true; // after the await: the render at the await already used the earlier flag
+                await BoardSizes.SaveAsync(size);
+            }
         }
         await gameRoot.FocusAsync(preventScroll: true);
     }
@@ -259,6 +294,8 @@
     }
 
     private void SetMenuOpen(bool open) => menuOpen = open;
+
+    private Task BackToRealSize() => StartNewGame(lastRealSize);
 
     private void KeepGoing()
     {

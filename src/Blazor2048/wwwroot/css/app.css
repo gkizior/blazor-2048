@@ -385,7 +385,24 @@ a { color: var(--link); }
 .overlay.lose p { color: var(--text); }
 .overlay.win { background: var(--overlay-win); }
 .overlay.win p { color: #ffffff; text-shadow: 0 2px 12px rgba(0, 0, 0, 0.25); }
-.overlay-buttons { display: flex; gap: 10px; }
+.overlay-buttons { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+
+/* The secret 1x1 and 0x0 boards: the overlay waits a beat, so the lone 256 tile can pop in first
+   (reduced motion: no animation at all, see the media query below). */
+.overlay.instant-win { gap: 10px; padding: 16px; text-align: center; animation: fade 300ms ease-in 450ms backwards; }
+.overlay.instant-win p { font-size: clamp(26px, 7vw, 40px); line-height: 1.15; }
+.overlay.instant-win .overlay-sub { font-size: 16px; font-weight: 600; opacity: 0.92; margin-bottom: 6px; }
+/* 1x1: the winning 256 stays crisp in the upper part of its (board-sized) tile and the message sits
+   in a band below it, instead of a blurred giant "256" behind "You made 256!". */
+.board[data-size='1'] .tile { font-size: calc(var(--cell) * 0.3); }
+.board[data-size='1'] .tile-inner { padding-bottom: 38%; box-sizing: border-box; }
+.overlay.instant-win[data-size='1'] {
+    justify-content: flex-end;
+    padding-bottom: 22px;
+    background: linear-gradient(to top, var(--overlay-win) 40%, transparent 72%);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
 
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 
