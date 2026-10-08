@@ -1,0 +1,149 @@
+@inject BestScoreStore BestScores
+@inject Game game
+
+<div class="game" tabindex="0" @ref="gameRoot"
+     @onkeydown="OnKeyDown"
+     @ontouchstart="OnTouchStart"
+     @ontouchend="OnTouchEnd"
+     @ontouchmove:preventDefault="true">
+    <header class="top">
+        <h1 class="title">2048</h1>
+        <div class="scores">
+            <div class="score-box">
+                <span class="label">Score</span>
+                <span class="value">@game.Score</span>
+            </div>
+            <div class="score-box">
+                <span class="label">Best</span>
+                <span class="value">@best</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="sub">
+        <p class="hint">Join the tiles, get to <strong>2048!</strong></p>
+        <button class="btn" @onclick="NewGame">New Game</button>
+    </div>
+
+    <div class="board" aria-label="2048 board">
+        @for (var r = 0; r < game.Size; r++)
+        {
+            for (var c = 0; c < game.Size; c++)
+            {
+                var value = game.Board[r, c];
+                var isNew = game.SpawnedCell == (r, c);
+                var isMerged = game.MergedCells.Contains((r, c));
+                var tileCss = $"tile {TileClass(value)}{(isNew ? " tile-new" : isMerged ? " tile-merged" : "")}";
+                <div class="cell" @key="CellKey(r, c, isNew || isMerged)">
+                    @if (value != 0)
+                    {
+                        <div class="@tileCss">@value</div>
+                    }
+                </div>
+            }
+        }
+
+        @if (game.IsGameOver)
+        {
+            <div class="overlay lose">
+                <p>Game over!</p>
+                <button class="btn" @onclick="NewGame">Try again</button>
+            </div>
+        }
+        else if (game.HasWon && !game.KeepPlaying)
+        {
+            <div class="overlay win">
+                <p>You win!</p>
+                <div class="overlay-buttons">
+                    <button class="btn" @onclick="KeepGoing">Keep going</button>
+                    <button class="btn" @onclick="NewGame">New Game</button>
+                </div>
+            </div>
+        }
+    </div>
+
+    <p class="help">Swipe on your phone or use the arrow keys.</p>
+</div>
+
+@code {
+    private const double MinSwipeDistance = 24;
+
+    private ElementReference gameRoot;
+    private int best;
+    private int moveCount;
+    private (double X, double Y)? touchStart;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        // Focus the game so arrow keys work right away on desktop.
+        await gameRoot.FocusAsync(preventScroll: true);
+
+        best = await BestScores.LoadAsync();
+        if (best > 0) StateHasChanged();
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.AltKey || e.CtrlKey || e.MetaKey) return;
+
+        Direction? dir = e.Key switch
+        {
+            "ArrowUp" or "w" or "W" => Direction.Up,
+            "ArrowDown" or "s" or "S" => Direction.Down,
+            "ArrowLeft" or "a" or "A" => Direction.Left,
+            "ArrowRight" or "d" or "D" => Direction.Right,
+            _ => null,
+        };
+
+        if (dir is { } d) await MoveAsync(d);
+    }
+
+    private void OnTouchStart(TouchEventArgs e)
+    {
+        touchStart = e.Touches.Length == 1 ? (e.Touches[0].ClientX, e.Touches[0].ClientY) : null;
+    }
+
+    private async Task OnTouchEnd(TouchEventArgs e)
+    {
+        if (touchStart is not { } start || e.ChangedTouches.Length == 0) return;
+        touchStart = null;
+
+        var dx = e.ChangedTouches[0].ClientX - start.X;
+        var dy = e.ChangedTouches[0].ClientY - start.Y;
+        if (Math.Max(Math.Abs(dx), Math.Abs(dy)) < MinSwipeDistance) return; // a tap, not a swipe
+
+        var dir = Math.Abs(dx) > Math.Abs(dy)
+            ? (dx > 0 ? Direction.Right : Direction.Left)
+            : (dy > 0 ? Direction.Down : Direction.Up);
+
+        await MoveAsync(dir);
+    }
+
+    private async Task MoveAsync(Direction dir)
+    {
+        if (game.HasWon && !game.KeepPlaying) return; // waiting on the win dialog
+        if (!game.Move(dir)) return;
+
+        moveCount++;
+        if (game.Score > best)
+        {
+            best = game.Score;
+            await BestScores.SaveAsync(best);
+        }
+    }
+
+    private void NewGame()
+    {
+        game.NewGame();
+        moveCount++;
+    }
+
+    private void KeepGoing() => game.Continue();
+
+    // A changing key re-creates the element so the CSS pop animation replays.
+    private string CellKey(int r, int c, bool animate) => animate ? $"{r}-{c}-{moveCount}" : $"{r}-{c}";
+
+    private static string TileClass(int value) => value <= 2048 ? $"tile-{value}" : "tile-super";
+}

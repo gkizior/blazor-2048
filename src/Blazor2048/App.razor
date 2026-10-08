@@ -1,0 +1,11 @@
+<Router AppAssembly="@typeof(App).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+    </Found>
+    <NotFound>
+        <PageTitle>2048</PageTitle>
+        <LayoutView Layout="@typeof(MainLayout)">
+            <Blazor2048.Pages.Home />
+        </LayoutView>
+    </NotFound>
+</Router>
