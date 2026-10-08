@@ -6,6 +6,14 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
     <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
+
+    <Version>1.1.0</Version>
+    <Authors>Garrett Kizior</Authors>
+    <RepositoryUrl>https://github.com/gkizior/blazor-2048</RepositoryUrl>
+    <!-- The commit is shown separately in the footer, so keep the version clean (no "+sha"). -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+
+    <RepoRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '..', '..'))</RepoRoot>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,5 +28,37 @@
   <ItemGroup>
     <ProjectReference Include="..\Game2048.Core\Game2048.Core.csproj" />
   </ItemGroup>
+
+  <!-- ===== Build info for the footer: [AssemblyMetadata("BuildCommit"/"BuildDate"/"RepositoryUrl")] ===== -->
+  <Target Name="AddBuildInfo" BeforeTargets="GetAssemblyAttributes;CoreGenerateAssemblyInfo">
+    <Exec Command="git rev-parse HEAD" Condition="'$(GITHUB_SHA)' == ''" WorkingDirectory="$(RepoRoot)"
+          ConsoleToMSBuild="true" IgnoreExitCode="true" StandardOutputImportance="low" StandardErrorImportance="low"
+          EchoOff="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_GitCommit" />
+      <Output TaskParameter="ExitCode" PropertyName="_GitExitCode" />
+    </Exec>
+    <PropertyGroup>
+      <BuildCommit Condition="'$(BuildCommit)' == '' and '$(GITHUB_SHA)' != ''">$(GITHUB_SHA)</BuildCommit>
+      <BuildCommit Condition="'$(BuildCommit)' == '' and '$(_GitExitCode)' == '0'">$(_GitCommit.Trim())</BuildCommit>
+      <BuildCommit Condition="'$(BuildCommit)' == ''">unknown</BuildCommit>
+      <!-- CI: exact UTC time. Locally: the UTC date, so repeated builds stay incremental. -->
+      <BuildDate Condition="'$(BuildDate)' == '' and '$(GITHUB_ACTIONS)' == 'true'">$([System.DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"))</BuildDate>
+      <BuildDate Condition="'$(BuildDate)' == ''">$([System.DateTime]::UtcNow.ToString("yyyy-MM-dd"))</BuildDate>
+    </PropertyGroup>
+    <ItemGroup>
+      <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+        <_Parameter1>BuildCommit</_Parameter1>
+        <_Parameter2>$(BuildCommit)</_Parameter2>
+      </AssemblyAttribute>
+      <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+        <_Parameter1>BuildDate</_Parameter1>
+        <_Parameter2>$(BuildDate)</_Parameter2>
+      </AssemblyAttribute>
+      <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+        <_Parameter1>RepositoryUrl</_Parameter1>
+        <_Parameter2>$(RepositoryUrl)</_Parameter2>
+      </AssemblyAttribute>
+    </ItemGroup>
+  </Target>
 
 </Project>

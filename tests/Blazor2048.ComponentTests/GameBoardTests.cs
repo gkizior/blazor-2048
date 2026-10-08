@@ -1,26 +1,23 @@
 using Blazor2048.Components;
-using Blazor2048.Services;
 using Bunit;
 using Game2048.Core;
 using Microsoft.AspNetCore.Components.Web;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Blazor2048.ComponentTests;
 
-public class GameBoardTests : BunitContext
+public class GameBoardTests : AppTestContext
 {
-    private readonly Game game = new(4, new Random(7));
+    private Game game => Game;
 
-    public GameBoardTests()
+    /// <summary>The 16 board values (row-major) from the live tiles' data attributes.</summary>
+    private static int[] Tiles(IRenderedComponent<GameBoard> cut)
     {
-        // FocusAsync and localStorage go through JS interop; answer them without a browser.
-        JSInterop.Mode = JSRuntimeMode.Loose;
-        Services.AddScoped<BestScoreStore>();
-        Services.AddSingleton(game);
+        var values = new int[16];
+        foreach (var tile in cut.FindAll(".tile:not(.tile-retired)"))
+            values[int.Parse(tile.GetAttribute("data-row")!) * 4 + int.Parse(tile.GetAttribute("data-col")!)] =
+                int.Parse(tile.TextContent.Trim());
+        return values;
     }
-
-    private static int[] Tiles(IRenderedComponent<GameBoard> cut) =>
-        cut.FindAll(".cell").Select(c => int.TryParse(c.TextContent.Trim(), out var v) ? v : 0).ToArray();
 
     private static string Score(IRenderedComponent<GameBoard> cut) => cut.FindAll(".score-box .value")[0].TextContent;
     private static string Best(IRenderedComponent<GameBoard> cut) => cut.FindAll(".score-box .value")[1].TextContent;
@@ -177,5 +174,103 @@ public class GameBoardTests : BunitContext
         var cut = Render<GameBoard>();
 
         cut.WaitForAssertion(() => Assert.Equal("4096", Best(cut)));
+    }
+
+    [Fact]
+    public void Tiles_Are_Positioned_With_Custom_Properties()
+    {
+        game.SetBoard(new int[,]
+        {
+            { 0, 0, 0, 0 },
+            { 0, 0, 8, 0 },
+            { 0, 0, 0, 0 },
+            { 0, 0, 0, 0 },
+        });
+        var cut = Render<GameBoard>();
+
+        var tile = cut.Find(".tile.tile-8");
+        Assert.Contains("--r:1", tile.GetAttribute("style"));
+        Assert.Contains("--c:2", tile.GetAttribute("style"));
+        Assert.Equal("8", tile.QuerySelector(".tile-inner")!.TextContent);
+    }
+
+    [Fact]
+    public void Slide_Keeps_The_Tile_Key_And_Updates_Its_Position()
+    {
+        game.SetBoard(new int[,]
+        {
+            { 8, 0, 0, 0 },
+            { 0, 0, 0, 0 },
+            { 0, 0, 0, 0 },
+            { 0, 0, 0, 0 },
+        });
+        var cut = Render<GameBoard>();
+        var id = cut.Find(".tile.tile-8").GetAttribute("data-id");
+
+        cut.Find(".game").KeyDown(new KeyboardEventArgs { Key = "ArrowRight" });
+
+        var after = cut.Find(".tile.tile-8");
+        Assert.Contains("--c:3", after.GetAttribute("style"));
+        // Same tile id = same @key, so Blazor keeps the element and the browser transitions its transform.
+        Assert.Equal(id, after.GetAttribute("data-id"));
+        Assert.DoesNotContain("tile-new", after.ClassName);
+    }
+
+    [Fact]
+    public void Merge_Renders_Pop_Tile_Over_Retired_Halves_And_A_Spawn()
+    {
+        game.SetBoard(new int[,]
+        {
+            { 4, 4, 0, 0 },
+            { 0, 0, 0, 0 },
+            { 0, 0, 0, 0 },
+            { 0, 0, 0, 0 },
+        });
+        var cut = Render<GameBoard>();
+
+        cut.Find(".game").KeyDown(new KeyboardEventArgs { Key = "ArrowLeft" });
+
+        var merged = cut.Find(".tile.tile-merged");
+        Assert.Equal("8", merged.TextContent.Trim());
+        var retired = cut.FindAll(".tile.tile-retired");
+        Assert.Equal(2, retired.Count);
+        Assert.All(retired, t => Assert.Contains("--c:0", t.GetAttribute("style")));
+        Assert.Single(cut.FindAll(".tile.tile-new"));
+
+        // The next move drops the retired halves and the animation flags.
+        cut.Find(".game").KeyDown(new KeyboardEventArgs { Key = "ArrowDown" });
+        Assert.Empty(cut.FindAll(".tile.tile-retired"));
+        Assert.Empty(cut.FindAll(".tile.tile-merged"));
+    }
+
+    [Fact]
+    public void Rapid_Moves_Are_All_Applied()
+    {
+        game.SetBoard(new int[,]
+        {
+            { 2, 0, 0, 0 },
+            { 0, 0, 0, 0 },
+            { 0, 0, 0, 0 },
+            { 0, 0, 0, 0 },
+        });
+        var cut = Render<GameBoard>();
+        var root = cut.Find(".game");
+        var applied = 0;
+        foreach (var key in new[] { "ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp", "ArrowRight", "ArrowDown" })
+        {
+            var before = string.Join(",", Tiles(cut));
+            root.KeyDown(new KeyboardEventArgs { Key = key });
+            if (string.Join(",", Tiles(cut)) != before) applied++;
+        }
+
+        Assert.True(applied >= 4, $"Only {applied} of 6 moves changed the board.");
+    }
+
+    [Fact]
+    public void Header_Has_Theme_Toggle()
+    {
+        var cut = Render<GameBoard>();
+
+        Assert.NotNull(cut.Find("button.theme-toggle"));
     }
 }

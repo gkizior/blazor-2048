@@ -1,0 +1,24 @@
+@implements IDisposable
+@inject ThemeService Theme
+
+<button type="button" class="icon-btn theme-toggle" @onclick="Theme.CycleAsync"
+        data-mode="@Theme.ModeName" aria-label="@Label" title="@Label">
+    <Icon Name="@IconName" />
+</button>
+
+@code {
+    private string IconName => Theme.Mode switch
+    {
+        ThemeMode.Light => "sun",
+        ThemeMode.Dark => "moon",
+        _ => "auto",
+    };
+
+    private string Label => $"Theme: {Theme.Mode} (switch to {ThemeService.Next(Theme.Mode)})";
+
+    protected override void OnInitialized() => Theme.Changed += OnThemeChanged;
+
+    private void OnThemeChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Theme.Changed -= OnThemeChanged;
+}

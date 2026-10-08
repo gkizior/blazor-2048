@@ -1,39 +1,14 @@
-using Microsoft.JSInterop;
+using System.Globalization;
 
 namespace Blazor2048.Services;
 
-/// <summary>
-/// Persists the best score in the browser's localStorage.
-/// This is the app's only JS interop: WebAssembly has no direct access to
-/// localStorage, so we call the built-in browser API through IJSRuntime
-/// (no custom JavaScript file).
-/// </summary>
-public sealed class BestScoreStore(IJSRuntime js)
+/// <summary>Persists the best score in localStorage (through <see cref="BrowserStorage"/>).</summary>
+public sealed class BestScoreStore(BrowserStorage storage)
 {
-    private const string Key = "blazor2048.best";
+    public const string Key = "blazor2048.best";
 
-    public async Task<int> LoadAsync()
-    {
-        try
-        {
-            var stored = await js.InvokeAsync<string?>("localStorage.getItem", Key);
-            return int.TryParse(stored, out var best) ? best : 0;
-        }
-        catch (JSException)
-        {
-            return 0; // storage unavailable (e.g. private mode)
-        }
-    }
+    public async Task<int> LoadAsync() =>
+        int.TryParse(await storage.GetAsync(Key), NumberStyles.Integer, CultureInfo.InvariantCulture, out var best) ? best : 0;
 
-    public async Task SaveAsync(int best)
-    {
-        try
-        {
-            await js.InvokeVoidAsync("localStorage.setItem", Key, best.ToString());
-        }
-        catch (JSException)
-        {
-            // ignore: best score just won't persist
-        }
-    }
+    public Task SaveAsync(int best) => storage.SetAsync(Key, best.ToString(CultureInfo.InvariantCulture));
 }

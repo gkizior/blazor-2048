@@ -1,0 +1,24 @@
+@inject BuildInfo Build
+
+<footer class="app-footer" aria-label="Build information">
+    <span class="footer-author">© @Year Garrett Kizior</span>
+    <span class="footer-sep" aria-hidden="true">·</span>
+    <span class="footer-version" title="App version">v@(Build.Version)</span>
+    <span class="footer-sep" aria-hidden="true">·</span>
+    <span class="footer-runtime" title="Runtime">@Build.Runtime</span>
+    <span class="footer-sep" aria-hidden="true">·</span>
+    @if (Build.CommitUrl is { } url)
+    {
+        <a class="footer-sha" href="@url" target="_blank" rel="noopener" title="Commit @Build.Commit">@Build.ShortCommit</a>
+    }
+    else
+    {
+        <span class="footer-sha">@Build.ShortCommit</span>
+    }
+    <span class="footer-sep" aria-hidden="true">·</span>
+    <time class="footer-date" datetime="@Build.BuildDate" title="Built @Build.BuildDate">@Build.BuildDay</time>
+</footer>
+
+@code {
+    private string Year => Build.BuildDay.Length >= 4 && char.IsDigit(Build.BuildDay[0]) ? Build.BuildDay[..4] : DateTime.UtcNow.Year.ToString();
+}

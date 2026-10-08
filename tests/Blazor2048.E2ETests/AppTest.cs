@@ -29,6 +29,12 @@ public abstract class AppTest(SiteServer site) : BrowserTest
         return page;
     }
 
+    /// <summary>The 16 board values (row-major, "" for empty) read from the live tiles.</summary>
     protected static async Task<string[]> BoardAsync(IPage page) =>
-        (await page.Locator(".board .cell").AllInnerTextsAsync()).Select(s => s.Trim()).ToArray();
+        await page.EvaluateAsync<string[]>(@"() => {
+            const cells = Array(16).fill('');
+            document.querySelectorAll('.board .tile:not(.tile-retired)').forEach(t =>
+                cells[+t.dataset.row * 4 + +t.dataset.col] = t.dataset.value);
+            return cells;
+        }");
 }

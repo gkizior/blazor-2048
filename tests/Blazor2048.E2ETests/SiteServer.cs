@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
@@ -45,6 +46,17 @@ public sealed class SiteServer : IAsyncLifetime
             RequestPath = basePath,
             ServeUnknownFileTypes = true,
             ContentTypeProvider = new FileExtensionContentTypeProvider(),
+        });
+        // Like GitHub Pages: unknown paths get 404.html (a copy of index.html), so deep links boot the app.
+        var notFound = Path.Combine(siteDir, File.Exists(Path.Combine(siteDir, "404.html")) ? "404.html" : "index.html");
+        _server.Run(async context =>
+        {
+            context.Response.StatusCode = 404;
+            if (basePath == "" || context.Request.Path.StartsWithSegments(basePath))
+            {
+                context.Response.ContentType = "text/html; charset=utf-8";
+                await context.Response.SendFileAsync(notFound);
+            }
         });
         await _server.StartAsync();
         BaseUrl = _server.Urls.First() + basePath + "/";

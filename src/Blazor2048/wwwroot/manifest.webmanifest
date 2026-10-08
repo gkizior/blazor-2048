@@ -1,13 +1,14 @@
 {
   "name": "2048 (Blazor)",
+  "description": "The 2048 puzzle as a .NET 10 Blazor WebAssembly PWA",
   "short_name": "2048",
   "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#faf8ef",
-  "theme_color": "#faf8ef",
+  "background_color": "#f6f3ee",
+  "theme_color": "#f6f3ee",
   "prefer_related_applications": false,
   "icons": [
     { "src": "icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "any" },

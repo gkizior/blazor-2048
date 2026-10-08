@@ -1,0 +1,43 @@
+@* Small inline SVG icons (stroke = currentColor), so buttons follow the theme without image files. *@
+<svg class="icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"
+     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    @switch (Name)
+    {
+        case "sun":
+            <circle cx="12" cy="12" r="4" />
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+            break;
+        case "moon":
+            <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+            break;
+        case "auto":
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none" />
+            break;
+        case "book":
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+            <path d="M9 7h7M9 11h5" />
+            break;
+        case "menu":
+            <path d="M3 6h18M3 12h18M3 18h18" />
+            break;
+        case "back":
+            <path d="M15 18l-6-6 6-6" />
+            break;
+        case "next":
+            <path d="M9 18l6-6-6-6" />
+            break;
+        case "github":
+            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
+            break;
+        case "search":
+            <circle cx="11" cy="11" r="7" />
+            <path d="M21 21l-4.3-4.3" />
+            break;
+    }
+</svg>
+
+@code {
+    [Parameter, EditorRequired] public string Name { get; set; } = "";
+}

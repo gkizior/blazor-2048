@@ -22,26 +22,30 @@
 
     <div class="sub">
         <p class="hint">Join the tiles, get to <strong>2048!</strong></p>
-        <button class="btn" @onclick="NewGame">New Game</button>
+        <div class="actions">
+            <ThemeToggle />
+            <button class="btn new-game" @onclick="NewGame">New Game</button>
+        </div>
     </div>
 
-    <div class="board" aria-label="2048 board">
-        @for (var r = 0; r < game.Size; r++)
+    <div class="board" aria-label="2048 board" data-moves="@moves">
+        @for (var i = 0; i < game.Size * game.Size; i++)
         {
-            for (var c = 0; c < game.Size; c++)
+            <div class="cell"></div>
+        }
+
+        @* Tiles live in one flat, id-ordered list keyed by tile id. Moving a tile only changes its
+           --r/--c custom properties, so CSS transitions slide it; merges and spawns are new
+           elements whose scale animation plays once. No timers: a new move simply retargets. *@
+        <div class="tile-layer">
+            @foreach (var tile in game.RenderTiles)
             {
-                var value = game.Board[r, c];
-                var isNew = game.SpawnedCell == (r, c);
-                var isMerged = game.MergedCells.Contains((r, c));
-                var tileCss = $"tile {TileClass(value)}{(isNew ? " tile-new" : isMerged ? " tile-merged" : "")}";
-                <div class="cell" @key="CellKey(r, c, isNew || isMerged)">
-                    @if (value != 0)
-                    {
-                        <div class="@tileCss">@value</div>
-                    }
+                <div @key="tile.Id" class="@TileCss(tile)" style="--r:@tile.Row;--c:@tile.Col"
+                     data-id="@tile.Id" data-row="@tile.Row" data-col="@tile.Col" data-value="@tile.Value">
+                    <div class="tile-inner">@tile.Value</div>
                 </div>
             }
-        }
+        </div>
 
         @if (game.IsGameOver)
         {
@@ -70,7 +74,7 @@
 
     private ElementReference gameRoot;
     private int best;
-    private int moveCount;
+    private int moves; // successful moves this session (exposed as data-moves for E2E checks)
     private (double X, double Y)? touchStart;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -125,8 +129,8 @@
     {
         if (game.HasWon && !game.KeepPlaying) return; // waiting on the win dialog
         if (!game.Move(dir)) return;
+        moves++;
 
-        moveCount++;
         if (game.Score > best)
         {
             best = game.Score;
@@ -134,16 +138,18 @@
         }
     }
 
-    private void NewGame()
-    {
-        game.NewGame();
-        moveCount++;
-    }
+    private void NewGame() => game.NewGame();
 
     private void KeepGoing() => game.Continue();
 
-    // A changing key re-creates the element so the CSS pop animation replays.
-    private string CellKey(int r, int c, bool animate) => animate ? $"{r}-{c}-{moveCount}" : $"{r}-{c}";
+    private static string TileCss(Tile tile)
+    {
+        var css = $"tile {TileClass(tile.Value)}";
+        if (tile.IsRetired) return css + " tile-retired";
+        if (tile.IsMerged) return css + " tile-merged";
+        if (tile.IsNew) return css + " tile-new";
+        return css;
+    }
 
     private static string TileClass(int value) => value <= 2048 ? $"tile-{value}" : "tile-super";
 }

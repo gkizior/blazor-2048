@@ -1,13 +1,65 @@
+/* ==========================================================================
+   Theme tokens
+   Every color is a CSS custom property. light-dark() picks the light or dark
+   value from the element's color-scheme:
+   - :root uses "light dark", so the loading screen follows the system theme;
+   - .app-root[data-theme] (rendered by MainLayout.razor) pins light, dark,
+     or system. No JavaScript is involved in theming.
+   ========================================================================== */
 :root {
-    --bg: #faf8ef;
-    --text: #776e65;
-    --board-bg: #bbada0;
-    --cell-bg: rgba(238, 228, 218, 0.35);
+    color-scheme: light dark;
+
+    --bg:            light-dark(#f6f3ee, #121318);
+    --surface:       light-dark(#ffffff, #1b1d24);
+    --surface-2:     light-dark(#efe9e1, #232631);
+    --border:        light-dark(#e3dbd0, #2c303b);
+    --text:          light-dark(#3b3631, #eceef3);
+    --text-muted:    light-dark(#6f675e, #a3a8b5);
+    --accent:        #6d4aff;
+    --accent-text:   #ffffff;
+    --accent-soft:   light-dark(#ece7ff, #2a2450);
+    --link:          light-dark(#5a36f0, #b3a3ff);
+    --board-bg:      light-dark(#cdc1b4, #262a33);
+    --cell-bg:       light-dark(rgba(255, 255, 255, 0.3), rgba(0, 0, 0, 0.22));
+    --score-bg:      light-dark(#3b3631, #262a33);
+    --score-label:   light-dark(#d9cfc4, #a3a8b5);
+    --score-value:   #ffffff;
+    --overlay-lose:  light-dark(rgba(246, 243, 238, 0.78), rgba(18, 19, 24, 0.8));
+    --overlay-win:   light-dark(rgba(109, 74, 255, 0.55), rgba(109, 74, 255, 0.45));
+    --shadow:        light-dark(0 10px 30px rgba(59, 54, 49, 0.12), 0 10px 30px rgba(0, 0, 0, 0.45));
+    --code-bg:       light-dark(#f3efe9, #191b22);
+
+    /* Tiles: text/background pairs are at least 4.5:1 contrast in both themes. */
+    --tile-2-bg:     light-dark(#eee6db, #3e4556);  --tile-2-fg:    light-dark(#4a4038, #e7e9ee);
+    --tile-4-bg:     light-dark(#ecdcc0, #505971);  --tile-4-fg:    light-dark(#4a4038, #f2f4f8);
+    --tile-8-bg:     #ffad66;                       --tile-8-fg:    #3a1a00;
+    --tile-16-bg:    #ff8a4c;                       --tile-16-fg:   #331200;
+    --tile-32-bg:    #f2603d;                       --tile-32-fg:   #2a0a00;
+    --tile-64-bg:    #c9302c;                       --tile-64-fg:   #ffffff;
+    --tile-128-bg:   #f7d154;                       --tile-128-fg:  #3a2c00;
+    --tile-256-bg:   #f4c03a;                       --tile-256-fg:  #3a2a00;
+    --tile-512-bg:   #eeab22;                       --tile-512-fg:  #2f1f00;
+    --tile-1024-bg:  #7b57f5;                       --tile-1024-fg: #ffffff;
+    --tile-2048-bg:  #6a3df0;                       --tile-2048-fg: #ffffff;
+    --tile-super-bg: linear-gradient(135deg, #d63384, #7b3fe4); --tile-super-fg: #ffffff;
+
+    /* Motion */
+    --slide: 110ms;
+    --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+
     --gap: clamp(6px, 2.4vmin, 14px);
-    /* Board fits the screen: limited by width, height left after the header, and a desktop cap. */
-    --board: min(92vw, calc(100dvh - 250px - env(safe-area-inset-top) - env(safe-area-inset-bottom)), 480px);
+    --radius: 10px;
+    /* Board fits the screen: limited by width, height left after header + footer, and a desktop cap. */
+    --board: min(92vw, calc(100dvh - 280px - env(safe-area-inset-top) - env(safe-area-inset-bottom)), 480px);
+    --font: "Inter", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
 }
 
+.app-root[data-theme="light"] { color-scheme: light; }
+.app-root[data-theme="dark"]  { color-scheme: dark; }
+.app-root[data-theme="system"] { color-scheme: light dark; }
+
+/* ========================================================================== Base */
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
 html, body {
@@ -16,10 +68,9 @@ html, body {
     height: 100%;
     overflow: hidden;
     overscroll-behavior: none;
-    touch-action: none;
     background: var(--bg);
     color: var(--text);
-    font-family: "Clear Sans", "Helvetica Neue", Arial, sans-serif;
+    font-family: var(--font);
     -webkit-user-select: none;
     user-select: none;
     -webkit-touch-callout: none;
@@ -30,136 +81,252 @@ body { position: fixed; inset: 0; }
 
 #app { height: 100%; }
 
-.game {
+.app-root {
     height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+    color: var(--text);
+    transition: background-color 200ms ease, color 200ms ease;
+}
+
+.app-main { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+
+a { color: var(--link); }
+
+/* ========================================================================== Game layout */
+.game {
+    flex: 1;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 14px;
-    padding: calc(env(safe-area-inset-top) + 12px) 12px calc(env(safe-area-inset-bottom) + 12px);
+    padding: calc(env(safe-area-inset-top) + 12px) 12px 8px;
+    touch-action: none; /* swipes are game moves, not scrolls */
 }
 
 .top, .sub { width: var(--board); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 
-.title { margin: 0; font-size: clamp(44px, 14vw, 72px); font-weight: 800; line-height: 1; color: var(--text); }
+.title {
+    margin: 0;
+    font-size: clamp(44px, 14vw, 72px);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    color: var(--text);
+}
 
 .scores { display: flex; gap: 6px; }
 
 .score-box {
-    background: var(--board-bg);
-    border-radius: 6px;
+    background: var(--score-bg);
+    border-radius: 8px;
     padding: 6px 12px;
     min-width: 64px;
     text-align: center;
     display: flex;
     flex-direction: column;
 }
-.score-box .label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #eee4da; letter-spacing: .5px; }
-.score-box .value { font-size: 20px; font-weight: 800; color: #fff; }
+.score-box .label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--score-label); letter-spacing: .06em; }
+.score-box .value { font-size: 20px; font-weight: 800; color: var(--score-value); font-variant-numeric: tabular-nums; }
 
-.hint { margin: 0; font-size: 15px; }
+.hint { margin: 0; font-size: 14px; color: var(--text-muted); }
+.hint strong { color: var(--text); }
 
+.actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+
+/* ========================================================================== Buttons */
 .btn {
-    background: #8f7a66;
-    color: #f9f6f2;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--accent);
+    color: var(--accent-text);
     border: none;
-    border-radius: 6px;
+    border-radius: 8px;
     padding: 10px 16px;
     font-size: 16px;
     font-weight: 700;
     font-family: inherit;
+    text-decoration: none;
     cursor: pointer;
     touch-action: manipulation;
     white-space: nowrap;
+    transition: transform 120ms ease, filter 120ms ease;
 }
+.btn:hover { filter: brightness(1.08); }
 .btn:active { transform: scale(0.97); }
+.btn-sm { padding: 6px 12px; font-size: 14px; }
+.btn .icon { width: 16px; height: 16px; }
 
+.icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: background-color 150ms ease, transform 120ms ease;
+}
+.icon-btn:hover { background: var(--surface-2); }
+.icon-btn:active { transform: scale(0.95); }
+
+.btn:focus-visible, .icon-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+/* ========================================================================== Board + tiles */
 .board {
     position: relative;
     width: var(--board);
     height: var(--board);
     background: var(--board-bg);
-    border-radius: 8px;
+    border-radius: var(--radius);
     padding: var(--gap);
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     grid-template-rows: repeat(4, 1fr);
     gap: var(--gap);
     touch-action: none;
+    box-shadow: var(--shadow);
 }
 
-.cell { background: var(--cell-bg); border-radius: 5px; position: relative; }
+.cell { background: var(--cell-bg); border-radius: 6px; }
+
+/* Tiles sit in a layer over the grid. Position is a transform built from --r/--c (set per tile
+   by GameBoard.razor), so a move only changes transform: the GPU slides it, no layout work. */
+.tile-layer { position: absolute; inset: var(--gap); pointer-events: none; }
 
 .tile {
     position: absolute;
-    inset: 0;
-    border-radius: 5px;
+    top: 0;
+    left: 0;
+    width: calc((100% - 3 * var(--gap)) / 4);
+    height: calc((100% - 3 * var(--gap)) / 4);
+    transform: translate(calc(var(--c) * (100% + var(--gap))), calc(var(--r) * (100% + var(--gap))));
+    transition: transform var(--slide) var(--ease-out);
+    z-index: 1;
+    font-size: calc(var(--board) * 0.11);
+}
+.tile-retired { z-index: 0; }   /* merged-away halves slide in underneath the new tile */
+.tile-merged  { z-index: 2; }
+
+.tile-inner {
+    width: 100%;
+    height: 100%;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 800;
-    font-size: calc(var(--board) * 0.11);
     line-height: 1;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    background: var(--tile-bg);
+    color: var(--tile-fg);
 }
 
-.tile-new { animation: appear 160ms ease-out; }
-.tile-merged { animation: pop 180ms ease-out; z-index: 1; }
+/* Spawn and merge wait for the slide (animation-delay), then scale in/pop.
+   "backwards" keeps them at their first keyframe (hidden) during the delay. */
+.tile-new .tile-inner    { animation: tile-spawn 160ms var(--ease-out) var(--slide) backwards; }
+.tile-merged .tile-inner { animation: tile-pop 200ms ease-out calc(var(--slide) * 0.8) backwards; }
 
-@keyframes appear { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-@keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.18); } 100% { transform: scale(1); } }
+@keyframes tile-spawn { from { transform: scale(0.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes tile-pop   { 0% { transform: scale(0.6); } 55% { transform: scale(1.14); } 100% { transform: scale(1); } }
 
-/* Classic tile colors */
-.tile-2    { background: #eee4da; color: #776e65; }
-.tile-4    { background: #ede0c8; color: #776e65; }
-.tile-8    { background: #f2b179; color: #f9f6f2; }
-.tile-16   { background: #f59563; color: #f9f6f2; }
-.tile-32   { background: #f67c5f; color: #f9f6f2; }
-.tile-64   { background: #f65e3b; color: #f9f6f2; }
-.tile-128  { background: #edcf72; color: #f9f6f2; font-size: calc(var(--board) * 0.09); box-shadow: 0 0 20px 3px rgba(243,215,116,.24); }
-.tile-256  { background: #edcc61; color: #f9f6f2; font-size: calc(var(--board) * 0.09); box-shadow: 0 0 20px 3px rgba(243,215,116,.32); }
-.tile-512  { background: #edc850; color: #f9f6f2; font-size: calc(var(--board) * 0.09); box-shadow: 0 0 20px 3px rgba(243,215,116,.40); }
-.tile-1024 { background: #edc53f; color: #f9f6f2; font-size: calc(var(--board) * 0.07); box-shadow: 0 0 20px 3px rgba(243,215,116,.48); }
-.tile-2048 { background: #edc22e; color: #f9f6f2; font-size: calc(var(--board) * 0.07); box-shadow: 0 0 20px 3px rgba(243,215,116,.56); }
-.tile-super { background: #3c3a32; color: #f9f6f2; font-size: calc(var(--board) * 0.06); }
+.tile-2     { --tile-bg: var(--tile-2-bg);     --tile-fg: var(--tile-2-fg); }
+.tile-4     { --tile-bg: var(--tile-4-bg);     --tile-fg: var(--tile-4-fg); }
+.tile-8     { --tile-bg: var(--tile-8-bg);     --tile-fg: var(--tile-8-fg); }
+.tile-16    { --tile-bg: var(--tile-16-bg);    --tile-fg: var(--tile-16-fg); }
+.tile-32    { --tile-bg: var(--tile-32-bg);    --tile-fg: var(--tile-32-fg); }
+.tile-64    { --tile-bg: var(--tile-64-bg);    --tile-fg: var(--tile-64-fg); }
+.tile-128   { --tile-bg: var(--tile-128-bg);   --tile-fg: var(--tile-128-fg);   font-size: calc(var(--board) * 0.09); }
+.tile-256   { --tile-bg: var(--tile-256-bg);   --tile-fg: var(--tile-256-fg);   font-size: calc(var(--board) * 0.09); }
+.tile-512   { --tile-bg: var(--tile-512-bg);   --tile-fg: var(--tile-512-fg);   font-size: calc(var(--board) * 0.09); }
+.tile-1024  { --tile-bg: var(--tile-1024-bg);  --tile-fg: var(--tile-1024-fg);  font-size: calc(var(--board) * 0.07); }
+.tile-2048  { --tile-bg: var(--tile-2048-bg);  --tile-fg: var(--tile-2048-fg);  font-size: calc(var(--board) * 0.07); }
+.tile-super { --tile-bg: var(--tile-super-bg); --tile-fg: var(--tile-super-fg); font-size: calc(var(--board) * 0.06); }
+
+.tile-1024 .tile-inner { box-shadow: 0 0 18px 2px rgba(123, 87, 245, 0.35); }
+.tile-2048 .tile-inner { box-shadow: 0 0 24px 4px rgba(106, 61, 240, 0.5); }
+.tile-super .tile-inner { box-shadow: 0 0 24px 4px rgba(214, 51, 132, 0.4); }
 
 .overlay {
     position: absolute;
     inset: 0;
-    border-radius: 8px;
+    border-radius: var(--radius);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 16px;
     z-index: 10;
-    animation: fade 400ms ease-in;
+    animation: fade 300ms ease-in;
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
 }
 .overlay p { margin: 0; font-size: clamp(36px, 11vw, 56px); font-weight: 800; }
-.overlay.lose { background: rgba(238, 228, 218, 0.73); }
-.overlay.lose p { color: #776e65; }
-.overlay.win { background: rgba(237, 194, 46, 0.6); }
-.overlay.win p { color: #f9f6f2; }
+.overlay.lose { background: var(--overlay-lose); }
+.overlay.lose p { color: var(--text); }
+.overlay.win { background: var(--overlay-win); }
+.overlay.win p { color: #ffffff; text-shadow: 0 2px 12px rgba(0, 0, 0, 0.25); }
 .overlay-buttons { display: flex; gap: 10px; }
 
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 
-.help { margin: 0; font-size: 13px; opacity: .8; }
+.help { margin: 0; font-size: 13px; color: var(--text-muted); }
 
-/* Loading screen shown before Blazor starts */
+.game:focus, .game:focus-visible { outline: none; }
+
+@media (max-height: 560px) {
+    .help { display: none; }
+    .hint { display: none; }
+}
+
+/* ========================================================================== Footer */
+.app-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: baseline;
+    gap: 2px 6px;
+    padding: 4px 12px calc(env(safe-area-inset-bottom) + 6px);
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--text-muted);
+    -webkit-user-select: text;
+    user-select: text;
+}
+.app-footer .footer-author { font-weight: 600; color: var(--text); }
+.app-footer .footer-sha { font-family: var(--mono); color: var(--link); text-decoration: none; }
+.app-footer .footer-sha:hover { text-decoration: underline; }
+.footer-sep { opacity: 0.6; }
+
+/* ========================================================================== Loading screen (before Blazor starts) */
 .loading { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; }
 .loading-tile {
-    width: 120px; height: 120px; border-radius: 12px;
-    background: #edc22e; color: #f9f6f2;
+    width: 120px; height: 120px; border-radius: 16px;
+    background: var(--tile-2048-bg); color: var(--tile-2048-fg);
     display: flex; align-items: center; justify-content: center;
     font-size: 40px; font-weight: 800;
+    box-shadow: 0 0 30px 6px rgba(106, 61, 240, 0.35);
     animation: pulse 1.2s ease-in-out infinite;
 }
-.loading-text { font-size: 16px; }
+.loading-text { font-size: 16px; color: var(--text-muted); }
 @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
 
 #blazor-error-ui {
     background: lightyellow;
+    color: #222;
     bottom: 0;
     box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
     display: none;
@@ -171,9 +338,9 @@ body { position: fixed; inset: 0; }
 }
 #blazor-error-ui .dismiss { cursor: pointer; position: absolute; right: 0.75rem; top: 0.5rem; }
 
-@media (max-height: 560px) {
-    .help { display: none; }
-    .hint { display: none; }
+/* ========================================================================== Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .tile { transition: none; }
+    .tile-inner, .overlay, .loading-tile { animation: none !important; }
+    .app-root, .btn, .icon-btn { transition: none; }
 }
-
-.game:focus, .game:focus-visible { outline: none; }

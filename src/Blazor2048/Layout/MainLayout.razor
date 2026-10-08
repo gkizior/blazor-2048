@@ -1,2 +1,39 @@
 @inherits LayoutComponentBase
-@Body
+@implements IDisposable
+@inject ThemeService Theme
+
+<HeadContent>
+    @* Browser chrome color follows the theme (no JS needed: HeadOutlet renders this into <head>). *@
+    @if (Theme.Mode == ThemeMode.System)
+    {
+        <meta name="theme-color" content="@LightChrome" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="@DarkChrome" media="(prefers-color-scheme: dark)" />
+    }
+    else
+    {
+        <meta name="theme-color" content="@(Theme.Mode == ThemeMode.Dark ? DarkChrome : LightChrome)" />
+    }
+</HeadContent>
+
+<div class="app-root theme-@Theme.ModeName" data-theme="@Theme.ModeName">
+    <main class="app-main">
+        @Body
+    </main>
+    <AppFooter />
+</div>
+
+@code {
+    // Keep in sync with --bg in app.css.
+    private const string LightChrome = "#f6f3ee";
+    private const string DarkChrome = "#121318";
+
+    protected override async Task OnInitializedAsync()
+    {
+        Theme.Changed += OnThemeChanged;
+        await Theme.LoadAsync();
+    }
+
+    private void OnThemeChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Theme.Changed -= OnThemeChanged;
+}
