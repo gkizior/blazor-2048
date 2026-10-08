@@ -19,7 +19,7 @@ by hand: no Copilot and no `specify` CLI.
 ```mermaid
 flowchart TD
     accTitle: Spec-driven development workflow
-    Req[Feature request from Garrett] --> Spec["specs/NNN-name/spec.md<br/>request quoted verbatim,<br/>user stories, Given/When/Then,<br/>FR-###, success criteria"]
+    Req[Feature request from Garrett] --> Spec["spec.md<br/>verbatim request<br/>user stories<br/>scenarios, FR-###<br/>success criteria"]
     Const[(".specify/memory/<br/>constitution.md")] -.-> Check
     Spec --> Clarify{Open questions?}
     Clarify -- yes --> Ask[Ask, then mark NEEDS CLARIFICATION<br/>until answered] --> Spec
