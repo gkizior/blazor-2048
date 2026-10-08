@@ -46,8 +46,12 @@ public class AnimationE2ETests(SiteServer site) : AppTest(site)
             await page.Keyboard.PressAsync(key);
             await page.WaitForTimeoutAsync(40);
         }
-        await Expect(board).ToHaveAttributeAsync("data-moves", (start + keys.Length).ToString(), new() { Timeout = 2_000 });
+        // A press that cannot move anything (random start position) doesn't count, so wait for
+        // the counter to settle instead of expecting exactly one move per key.
+        await Expect(board).Not.ToHaveAttributeAsync("data-moves", start.ToString(), new() { Timeout = 2_000 });
         await page.WaitForTimeoutAsync(500);
+        var moved = int.Parse((await board.GetAttributeAsync("data-moves"))!) - start;
+        Assert.InRange(moved, 1, keys.Length);
 
         var r = await AnalyzeAsync(page);
         Assert.True(r.Frames > 20, $"Only {r.Frames} frames sampled.");
@@ -55,7 +59,7 @@ public class AnimationE2ETests(SiteServer site) : AppTest(site)
         Assert.Equal(0, r.ScaleSnaps);  // spawn/pop animations are not cut short by the next move
     }
 
-    private static Task StartSamplingAsync(IPage page) => page.EvaluateAsync(@"() => {
+    internal static Task StartSamplingAsync(IPage page) => page.EvaluateAsync(@"() => {
         const A = window.__anim = { frames: [], merges: new Set(), cells: null };
         const layer = document.querySelector('.tile-layer');
         const L = layer.getBoundingClientRect();
@@ -77,17 +81,18 @@ public class AnimationE2ETests(SiteServer site) : AppTest(site)
         requestAnimationFrame(loop);
     }");
 
-    private sealed record Result(int Frames, int Merges, int MergeSources, int SourcesRemovedBeforeArriving,
+    internal sealed record Result(int Frames, int Merges, int MergeSources, int SourcesRemovedBeforeArriving,
         int PopsBeforeSourcesArrived, int ScaleSnaps, int Teleports);
 
     private sealed record Sample(int Frame, double T, int Row, int Col, string Flag, double X, double Y, double W, double Op);
 
-    private static async Task<Result> AnalyzeAsync(IPage page)
+    internal static async Task<Result> AnalyzeAsync(IPage page)
     {
         var data = await page.EvaluateAsync<JsonElement>("() => ({ cells: window.__anim.cells, frames: window.__anim.frames })");
         var cells = data.GetProperty("cells").EnumerateArray().Select(c => (X: c[0].GetDouble(), Y: c[1].GetDouble(), W: c[2].GetDouble())).ToArray();
         var step = cells[1].X - cells[0].X;
         var cellW = cells[0].W;
+        var n = (int)Math.Round(Math.Sqrt(cells.Length)); // board size: cells are row-major
 
         var byId = new Dictionary<int, List<Sample>>();
         var frameCount = 0;
@@ -105,7 +110,7 @@ public class AnimationE2ETests(SiteServer site) : AppTest(site)
 
         double Dist(Sample s)
         {
-            var t = cells[s.Row * 4 + s.Col];
+            var t = cells[s.Row * n + s.Col];
             return Math.Sqrt((s.X - t.X) * (s.X - t.X) + (s.Y - t.Y) * (s.Y - t.Y));
         }
 
