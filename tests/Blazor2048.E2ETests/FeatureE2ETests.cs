@@ -2,7 +2,7 @@ using Microsoft.Playwright;
 
 namespace Blazor2048.E2ETests;
 
-/// <summary>Theme, footer, animation and input checks against the published site.</summary>
+/// <summary>Theme, docs, animation and input checks against the published site.</summary>
 public class FeatureE2ETests(SiteServer site) : AppTest(site)
 {
     private static Task<string> ThemeAsync(IPage page) => page.Locator(".app-root").GetAttributeAsync("data-theme")!;
@@ -59,6 +59,62 @@ public class FeatureE2ETests(SiteServer site) : AppTest(site)
     }
 
     [E2EFact]
+    public async Task Docs_Open_And_Navigate_To_A_Rendered_Mermaid_Diagram()
+    {
+        var page = await OpenAsync(new BrowserNewContextOptions { ColorScheme = ColorScheme.Light });
+        await page.Keyboard.PressAsync("ArrowLeft");
+        await page.Keyboard.PressAsync("ArrowUp");
+        var boardBefore = await BoardAsync(page);
+
+        await page.Locator("a.docs-btn").ClickAsync();
+        await page.WaitForURLAsync("**/docs");
+        await Expect(page.Locator(".markdown-body h1")).ToBeVisibleAsync();
+        Assert.True(await page.Locator(".toc-link").CountAsync() >= 8);
+
+        await page.Locator(".toc-link", new() { HasText = "Architecture" }).ClickAsync();
+        await page.WaitForURLAsync("**/docs/architecture");
+        await Expect(page.Locator(".markdown-body h1")).ToHaveTextAsync("Architecture");
+
+        var diagram = page.Locator("figure.diagram img.diagram-light").First;
+        await Expect(diagram).ToBeVisibleAsync();
+        await page.WaitForFunctionAsync("() => { const i = document.querySelector('figure.diagram img.diagram-light'); return i && i.complete && i.naturalWidth > 0; }");
+        Assert.False(await page.Locator("figure.diagram img.diagram-dark").First.IsVisibleAsync());
+
+        // The SVG is a real Mermaid render served as a static file.
+        var src = await diagram.EvaluateAsync<string>("i => i.src"); // absolute, resolved against <base href>
+        Assert.StartsWith(Site.BaseUrl + "docs-content/diagrams/", src);
+        var svg = await page.APIRequest.GetAsync(src);
+        Assert.True(svg.Ok);
+        Assert.Contains("<svg", await svg.TextAsync());
+
+        // Switching to dark swaps in the dark diagram.
+        await page.Locator(".docs-topbar .theme-toggle").ClickAsync(); // light
+        await page.Locator(".docs-topbar .theme-toggle").ClickAsync(); // dark
+        await Expect(page.Locator("figure.diagram img.diagram-dark").First).ToBeVisibleAsync();
+
+        // Back to the game: same board (the game survives the trip).
+        await page.Locator("a.back-to-game").ClickAsync();
+        await page.Locator(".board .cell").First.WaitForAsync();
+        Assert.Equal(boardBefore, await BoardAsync(page));
+    }
+
+    [E2EFact]
+    public async Task Docs_Deep_Link_Works_And_Links_Between_Docs_Navigate()
+    {
+        var context = await NewContext();
+        var page = await context.NewPageAsync();
+        await page.GotoAsync(Site.BaseUrl + "docs/game-engine");
+
+        await Expect(page.Locator(".markdown-body h1")).ToHaveTextAsync("Game engine", new() { Timeout = 60_000 });
+        await Expect(page.Locator(".toc-link.active")).ToHaveTextAsync("Game engine");
+        Assert.True(await page.Locator(".docs-outline a").CountAsync() >= 3);
+
+        await page.Locator(".markdown-body a[href='docs/testing']").First.ClickAsync();
+        await page.WaitForURLAsync("**/docs/testing");
+        await Expect(page.Locator(".markdown-body h1")).ToHaveTextAsync("Testing strategy");
+    }
+
+    [E2EFact]
     public async Task Tiles_Slide_By_Transform_On_The_Same_Element()
     {
         var page = await OpenAsync();
@@ -106,7 +162,7 @@ public class FeatureE2ETests(SiteServer site) : AppTest(site)
     }
 
     [E2EFact]
-    public async Task No_Console_Errors_On_The_Game()
+    public async Task No_Console_Errors_On_Game_And_Docs()
     {
         var context = await NewContext();
         var page = await context.NewPageAsync();
@@ -117,6 +173,9 @@ public class FeatureE2ETests(SiteServer site) : AppTest(site)
         await page.GotoAsync(Site.BaseUrl);
         await page.Locator(".board .cell").First.WaitForAsync(new() { Timeout = 60_000 });
         await page.Keyboard.PressAsync("ArrowDown");
+        await page.Locator("a.docs-btn").ClickAsync();
+        await page.Locator(".toc-link", new() { HasText = "Theming and animations" }).ClickAsync();
+        await Expect(page.Locator("figure.diagram").First).ToBeVisibleAsync();
 
         Assert.Empty(errors);
     }

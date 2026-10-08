@@ -267,10 +267,13 @@ public class GameBoardTests : AppTestContext
     }
 
     [Fact]
-    public void Header_Has_Theme_Toggle()
+    public void Header_Has_Docs_Link_And_Theme_Toggle()
     {
         var cut = Render<GameBoard>();
 
+        var docs = cut.Find("a.docs-btn");
+        Assert.Equal("docs", docs.GetAttribute("href"));
+        Assert.Equal("Open the docs", docs.GetAttribute("aria-label"));
         Assert.NotNull(cut.Find("button.theme-toggle"));
     }
 }

@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Build-time docs generator (never shipped to the browser).
+    - build:            Markdown (Markdig) -> HTML fragments + index.json in the app's wwwroot/docs-content
+    - render-diagrams:  pre-renders ```mermaid blocks to light/dark SVGs in docs/diagrams (mermaid-cli)
+    Blazor2048.csproj runs "build" before every app build.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Markdig" Version="1.4.0" />
+    <PackageReference Include="YamlDotNet" Version="18.1.0" />
+  </ItemGroup>
+
+</Project>

@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Game2048.Core\Game2048.Core.csproj" />
+    <ProjectReference Include="..\..\tools\DocsBuilder\DocsBuilder.csproj" />
   </ItemGroup>
 
 </Project>

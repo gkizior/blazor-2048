@@ -1,0 +1,24 @@
+# Table of contents for the in-app docs (DocFX-style). Paths are relative to this folder.
+# Any .md file in the repo that isn't listed here still appears, under "More".
+- name: Overview
+  items:
+    - name: Introduction
+      href: ../README.md
+    - name: Architecture
+      href: architecture.md
+- name: Guides
+  items:
+    - name: Game engine
+      href: game-engine.md
+    - name: Components
+      href: components.md
+    - name: Theming and animations
+      href: theming-and-animations.md
+    - name: Docs system
+      href: docs-system.md
+- name: Engineering
+  items:
+    - name: Testing strategy
+      href: testing.md
+    - name: Build and deploy
+      href: build-and-deploy.md

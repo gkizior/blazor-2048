@@ -14,6 +14,10 @@
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
 
     <RepoRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '..', '..'))</RepoRoot>
+    <DocsOutputDir>$(MSBuildProjectDirectory)/wwwroot/docs-content/</DocsOutputDir>
+    <!-- DocsBuilder is referenced only for build ordering (ReferenceOutputAssembly=false), never shipped. -->
+    <ValidateExecutableReferencesMatchSelfContained>false</ValidateExecutableReferencesMatchSelfContained>
+    <DocsBuilderDll>$(RepoRoot)tools/DocsBuilder/bin/$(Configuration)/net10.0/DocsBuilder.dll</DocsBuilderDll>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,7 +31,36 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Game2048.Core\Game2048.Core.csproj" />
+    <!-- Build-time tool only: makes sure DocsBuilder is built first; nothing is referenced or shipped. -->
+    <ProjectReference Include="..\..\tools\DocsBuilder\DocsBuilder.csproj" ReferenceOutputAssembly="false" Private="false" />
   </ItemGroup>
+
+  <!-- ===== Docs: repo Markdown -> wwwroot/docs-content (HTML + index.json + diagram SVGs) ===== -->
+  <ItemGroup>
+    <DocsInput Include="$(RepoRoot)**/*.md;$(RepoRoot)docs/toc.yml;$(RepoRoot)docs/diagrams/*.svg;$(RepoRoot)docs/images/**"
+               Exclude="$(RepoRoot)**/bin/**;$(RepoRoot)**/obj/**;$(RepoRoot)**/node_modules/**;$(RepoRoot).git/**;$(RepoRoot)artifacts/**;$(RepoRoot)publish/**;$(RepoRoot)**/TestResults/**" />
+  </ItemGroup>
+
+  <Target Name="BuildDocs"
+          BeforeTargets="ResolveProjectStaticWebAssets"
+          DependsOnTargets="ResolveProjectReferences"
+          Inputs="@(DocsInput);$(DocsBuilderDll)"
+          Outputs="$(DocsOutputDir)index.json"
+          Condition="'$(NoBuild)' != 'true'">
+    <PropertyGroup>
+      <_DotNetHost>$(DOTNET_HOST_PATH)</_DotNetHost>
+      <_DotNetHost Condition="'$(_DotNetHost)' == ''">dotnet</_DotNetHost>
+    </PropertyGroup>
+    <Exec Command="&quot;$(_DotNetHost)&quot; &quot;$(DocsBuilderDll)&quot; build --repo &quot;$(RepoRoot.TrimEnd('/\'))&quot; --out &quot;$(DocsOutputDir.TrimEnd('/\'))&quot; --repo-url &quot;$(RepositoryUrl)&quot;" />
+  </Target>
+
+  <!-- Files generated during the build weren't there when wwwroot was globbed: (re)add them. -->
+  <Target Name="IncludeDocsContent" AfterTargets="BuildDocs" BeforeTargets="ResolveProjectStaticWebAssets">
+    <ItemGroup>
+      <Content Remove="wwwroot\docs-content\**" />
+      <Content Include="wwwroot\docs-content\**" CopyToPublishDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Target>
 
   <!-- ===== Build info for the footer: [AssemblyMetadata("BuildCommit"/"BuildDate"/"RepositoryUrl")] ===== -->
   <Target Name="AddBuildInfo" BeforeTargets="GetAssemblyAttributes;CoreGenerateAssemblyInfo">

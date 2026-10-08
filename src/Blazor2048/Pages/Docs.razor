@@ -1,0 +1,156 @@
+@page "/docs"
+@page "/docs/{Slug}"
+@inject IDocsSource Source
+@inject BuildInfo Build
+
+<PageTitle>@(current?.Title ?? "Docs") · 2048 Docs</PageTitle>
+
+<div class="docs @(menuOpen ? "menu-open" : null)">
+    <header class="docs-topbar">
+        <button type="button" class="icon-btn docs-menu-btn" @onclick="() => menuOpen = !menuOpen"
+                aria-label="Toggle navigation" aria-expanded="@(menuOpen ? "true" : "false")">
+            <Icon Name="menu" />
+        </button>
+        <a class="docs-brand" href="docs"><span class="brand-tile">2048</span><span>Docs</span></a>
+        <div class="docs-topbar-actions">
+            <a class="btn btn-sm back-to-game" href="./"><Icon Name="back" /> Play</a>
+            <ThemeToggle />
+        </div>
+    </header>
+
+    <div class="docs-body">
+        <nav class="docs-sidebar" aria-label="Documentation">
+            <label class="docs-filter">
+                <Icon Name="search" />
+                <input type="search" placeholder="Filter docs" aria-label="Filter docs"
+                       @bind="filter" @bind:event="oninput" />
+            </label>
+            @if (index is not null)
+            {
+                @foreach (var section in index.Sections)
+                {
+                    var pages = section.Pages.Where(Matches).ToList();
+                    if (pages.Count == 0) continue;
+                    <div class="toc-section">
+                        <h2 class="toc-title">@section.Title</h2>
+                        <ul>
+                            @foreach (var p in pages)
+                            {
+                                var active = p == current;
+                                <li>
+                                    <a href="docs/@p.Slug" class="toc-link @(active ? "active" : null)"
+                                       aria-current="@(active ? "page" : null)" @onclick="() => menuOpen = false">@p.Title</a>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                }
+            }
+        </nav>
+
+        @* Keyed by page so the scroll position resets when the page changes. *@
+        <article class="docs-main" @key="current?.Slug" tabindex="-1">
+            @if (error is not null)
+            {
+                <div class="docs-message error">
+                    <h1>Couldn't load the docs</h1>
+                    <p>@error</p>
+                </div>
+            }
+            else if (index is null || (current is not null && html is null))
+            {
+                <div class="docs-message loading" role="status">Loading docs…</div>
+            }
+            else if (current is null)
+            {
+                <div class="docs-message not-found">
+                    <h1>Page not found</h1>
+                    <p>There's no doc called “@Slug”. Pick one from the list.</p>
+                </div>
+            }
+            else
+            {
+                <div class="docs-breadcrumb">@SectionOf(current)?.Title <span aria-hidden="true">/</span> @current.Title</div>
+                <div class="markdown-body">@((MarkupString)html!)</div>
+
+                <nav class="docs-pager" aria-label="Previous and next">
+                    @if (Neighbour(-1) is { } prev)
+                    {
+                        <a class="pager-link prev" href="docs/@prev.Slug"><span class="pager-label">Previous</span><span class="pager-title">@prev.Title</span></a>
+                    }
+                    else { <span></span> }
+                    @if (Neighbour(+1) is { } next)
+                    {
+                        <a class="pager-link next" href="docs/@next.Slug"><span class="pager-label">Next</span><span class="pager-title">@next.Title</span></a>
+                    }
+                </nav>
+
+                @if (Build.RepositoryUrl != "")
+                {
+                    <a class="docs-source" href="@($"{Build.RepositoryUrl}/blob/main/{current.Source}")" target="_blank" rel="noopener">
+                        <Icon Name="github" /> View <code>@current.Source</code> on GitHub
+                    </a>
+                }
+            }
+        </article>
+
+        @if (current is not null && html is not null && current.Headings.Count > 0)
+        {
+            <aside class="docs-outline" aria-label="On this page">
+                <h2 class="toc-title">On this page</h2>
+                <ul>
+                    @foreach (var h in current.Headings)
+                    {
+                        <li class="outline-level-@h.Level"><a href="docs/@current.Slug#@h.Id">@h.Text</a></li>
+                    }
+                </ul>
+            </aside>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? Slug { get; set; }
+
+    private DocsIndex? index;
+    private DocsPage? current;
+    private string? html;
+    private string? error;
+    private string filter = "";
+    private bool menuOpen;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        try
+        {
+            error = null;
+            index ??= await Source.GetIndexAsync();
+            var target = string.IsNullOrEmpty(Slug) ? index.Pages.FirstOrDefault() : index.Find(Slug);
+            if (target == current && html is not null) return;
+
+            current = target;
+            html = null;
+            if (current is not null)
+                html = await Source.GetPageHtmlAsync(current.Slug);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or System.Text.Json.JsonException or TaskCanceledException)
+        {
+            error = ex.Message;
+        }
+    }
+
+    private bool Matches(DocsPage p) =>
+        string.IsNullOrWhiteSpace(filter)
+        || p.Title.Contains(filter.Trim(), StringComparison.OrdinalIgnoreCase)
+        || p.Headings.Any(h => h.Text.Contains(filter.Trim(), StringComparison.OrdinalIgnoreCase));
+
+    private DocsSection? SectionOf(DocsPage p) => index?.Sections.FirstOrDefault(s => s.Pages.Contains(p));
+
+    private DocsPage? Neighbour(int offset)
+    {
+        if (index is null || current is null) return null;
+        var all = index.Pages.ToList();
+        var i = all.IndexOf(current) + offset;
+        return i >= 0 && i < all.Count ? all[i] : null;
+    }
+}
