@@ -7,27 +7,39 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Least privilege by default; only the deploy job gets Pages permissions.
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
+# One run per branch/PR. New pushes to a PR cancel its older run; runs on main are never cancelled.
 concurrency:
-  group: pages
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  DOTNET_NOLOGO: "1"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.x
+          dotnet-version: 10.0.x # latest .NET 10 SDK; global.json requires >= 10.0.401 (Dependabot bumps it)
+
+      # Only needed when a Mermaid diagram changed without its SVGs being committed.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
 
       - name: Restore
         run: dotnet restore Blazor2048.sln
+
+      - name: Render missing Mermaid diagrams (no-op when docs/diagrams is up to date)
+        run: dotnet run --project tools/DocsBuilder -c Release -- render-diagrams --repo .
 
       - name: Build
         run: dotnet build Blazor2048.sln -c Release --no-restore
@@ -43,28 +55,37 @@ jobs:
       - name: Prepare for GitHub Pages (base href, 404.html, .nojekyll)
         run: python3 scripts/prepare-pages.py publish/wwwroot "/${{ github.event.repository.name }}/"
 
-      - uses: actions/configure-pages@v5
+      # The e2e job tests exactly these files.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: site
+          path: publish/wwwroot
+          include-hidden-files: true
+          retention-days: 7
+
+      - uses: actions/configure-pages@v6
         if: github.event_name != 'pull_request'
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         if: github.event_name != 'pull_request'
         with:
           path: publish/wwwroot
 
   e2e:
     name: E2E (Playwright for .NET)
+    needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.x
+          dotnet-version: 10.0.x # latest .NET 10 SDK; global.json requires >= 10.0.401 (Dependabot bumps it)
 
-      - name: Publish app the same way as for Pages
-        run: |
-          dotnet publish src/Blazor2048/Blazor2048.csproj -c Release -o publish
-          python3 scripts/prepare-pages.py publish/wwwroot "/${{ github.event.repository.name }}/"
+      - uses: actions/download-artifact@v8
+        with:
+          name: site
+          path: publish/wwwroot
 
       - name: Build E2E tests
         run: dotnet build tests/Blazor2048.E2ETests -c Release
@@ -80,12 +101,19 @@ jobs:
         run: dotnet test --project tests/Blazor2048.E2ETests -c Release --no-build
 
   deploy:
+    # Pull requests (including Dependabot's) run build + e2e but never deploy.
     if: github.event_name != 'pull_request'
     needs: [build, e2e]
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
