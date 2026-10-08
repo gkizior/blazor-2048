@@ -64,6 +64,7 @@ three files, is misnamed, lacks the required sections, or is missing from the do
 | 008 | Dependency policy and Dependabot | [spec](../specs/008-dependency-policy/spec.md) | [plan](../specs/008-dependency-policy/plan.md) | [tasks](../specs/008-dependency-policy/tasks.md) |
 | 009 | Repo metadata and social image | [spec](../specs/009-repo-metadata-and-social-image/spec.md) | [plan](../specs/009-repo-metadata-and-social-image/plan.md) | [tasks](../specs/009-repo-metadata-and-social-image/tasks.md) |
 | 010 | Spec-driven development | [spec](../specs/010-spec-driven-development/spec.md) | [plan](../specs/010-spec-driven-development/plan.md) | [tasks](../specs/010-spec-driven-development/tasks.md) |
+| 011 | Board sizes (4x4 to NxN) | [spec](../specs/011-board-sizes/spec.md) | [plan](../specs/011-board-sizes/plan.md) | [tasks](../specs/011-board-sizes/tasks.md) |
 
-Specs 001–009 were written after the features were built, from the commit history and the requests
+Specs 001–009 were written after the features were built; 011 onward were written first, from the commit history and the requests
 as they were relayed. Where a request's exact wording was not kept, the spec says so.

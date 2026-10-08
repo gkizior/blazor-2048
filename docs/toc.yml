@@ -106,3 +106,10 @@
           href: ../specs/010-spec-driven-development/plan.md
         - name: Tasks
           href: ../specs/010-spec-driven-development/tasks.md
+    - name: 011 Board sizes
+      href: ../specs/011-board-sizes/spec.md
+      items:
+        - name: Plan
+          href: ../specs/011-board-sizes/plan.md
+        - name: Tasks
+          href: ../specs/011-board-sizes/tasks.md

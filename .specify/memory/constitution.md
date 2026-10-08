@@ -74,6 +74,14 @@ Given/When/Then acceptance criteria; `FR-###` requirements; success criteria), `
 technical approach and a Constitution Check) and `tasks.md` (tasks checked off and linked to
 commits). See [Spec-driven development](../../docs/spec-driven-development.md).
 
+### IX. Snappy and lean at every scale
+
+Every supported configuration (each board size, phone and desktop) must feel as fast as the classic
+4x4 game. Hot paths (moves, rendering) avoid per-move allocations and LINQ; components render only
+when something visible changed; nothing grows without bound over a long session. Budgets and
+evidence come from `tools/PerfTrace` (timings under 4x CPU throttling and on a phone viewport,
+JS heap and WASM memory over long sessions) and from allocation tests.
+
 ## Quality Gates
 
 A change is done when:
@@ -90,4 +98,8 @@ This constitution overrides other conventions in the repo. Amendments are made b
 his request) in a commit that updates this file, bumps the version below and notes the change in
 the affected specs. Plans that need an exception must say so in their "Complexity Tracking" table.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-08 | **Last Amended**: 2026-10-08
+**Version**: 1.1.0 | **Ratified**: 2026-10-08 | **Last Amended**: 2026-10-08
+
+Amendments:
+- 1.1.0 (2026-10-08): added principle IX, "Snappy and lean at every scale", for
+  [011 Board sizes](../../specs/011-board-sizes/spec.md).
