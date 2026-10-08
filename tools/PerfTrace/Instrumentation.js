@@ -1,6 +1,9 @@
 // Injected by PerfTrace (test-side only; the app itself ships no custom JS).
 (() => {
-  const P = window.__perf = { frames: [], keys: [], muts: [], longtasks: [], samples: [], sampling: false, cells: null };
+  const P = window.__perf = { frames: [], keys: [], muts: [], paints: [], longtasks: [], samples: [], sampling: false, cells: null };
+  // Key-to-paint: the first DOM change after a key schedules one rAF; its time is the start of the
+  // frame that paints the change.
+  let paintPending = false;
   // The rAF loop only runs in sampling passes: a permanent rAF callback would force a main-thread
   // frame (and animation style updates) every vsync and distort the timing pass.
   let looping = false;
@@ -16,7 +19,10 @@
     new PerformanceObserver(l => l.getEntries().forEach(e => P.longtasks.push([e.startTime, e.duration])))
       .observe({ type: 'longtask', buffered: true });
   } catch { }
-  const mo = new MutationObserver(() => P.muts.push(performance.now()));
+  const mo = new MutationObserver(() => {
+    P.muts.push(performance.now());
+    if (!paintPending) { paintPending = true; requestAnimationFrame(() => { paintPending = false; P.paints.push(performance.now()); }); }
+  });
   const attach = () => {
     const layer = document.querySelector('.tile-layer');
     if (layer) mo.observe(layer, { subtree: true, childList: true, attributes: true, attributeFilter: ['style', 'class'] });

@@ -12,7 +12,8 @@ sealed record Glitches(int MergeSources, int MergeSourcesCut, int Merges, int Ea
         var centers = cells.EnumerateArray().Select(c => (X: c[0].GetDouble(), Y: c[1].GetDouble())).ToArray();
         var cellW = cells[0][2].GetDouble();
         var step = centers[1].X - centers[0].X;
-        (double X, double Y) Target(int r, int c) => centers[r * 4 + c];
+        var n = (int)Math.Round(Math.Sqrt(centers.Length)); // board size (cells are row-major)
+        (double X, double Y) Target(int r, int c) => centers[r * n + c];
 
         var byId = new Dictionary<int, List<S>>();
         var frameTimes = new List<double>();
