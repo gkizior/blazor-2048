@@ -2,21 +2,8 @@ using Microsoft.Playwright;
 
 namespace Blazor2048.E2ETests;
 
-[Collection(nameof(AppCollection))]
-public class GameE2ETests(AppFixture app)
+public class GameE2ETests(SiteServer site) : AppTest(site)
 {
-    private async Task<IPage> OpenAsync(BrowserNewContextOptions? options = null)
-    {
-        var context = await app.Browser.NewContextAsync(options ?? new BrowserNewContextOptions());
-        var page = await context.NewPageAsync();
-        await page.GotoAsync(app.BaseUrl);
-        await page.Locator(".board .cell").First.WaitForAsync(new() { Timeout = 60_000 });
-        return page;
-    }
-
-    private static Task<string[]> BoardAsync(IPage page) =>
-        page.Locator(".board .cell").AllInnerTextsAsync().ContinueWith(t => t.Result.Select(s => s.Trim()).ToArray());
-
     [E2EFact]
     public async Task App_Loads_And_Renders_Board()
     {
@@ -67,7 +54,6 @@ public class GameE2ETests(AppFixture app)
             }");
 
             Assert.All(fits, ok => Assert.True(ok, $"Layout overflows at {w}x{h}"));
-            await page.Context.CloseAsync();
         }
     }
 }

@@ -5,26 +5,26 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Playwright;
+using Microsoft.Extensions.Logging;
+
+[assembly: AssemblyFixture(typeof(Blazor2048.E2ETests.SiteServer))]
 
 namespace Blazor2048.E2ETests;
 
 /// <summary>
-/// Serves the published app with Kestrel (static files only, like GitHub Pages)
-/// and starts a headless Chromium via Playwright.
+/// Serves the published app with Kestrel (static files only, like GitHub Pages).
+/// Shared by every E2E test as an xUnit v3 assembly fixture.
 /// Uses E2E_SITE_DIR if set; otherwise publishes src/Blazor2048 first.
 /// </summary>
-public sealed class AppFixture : IAsyncLifetime
+public sealed class SiteServer : IAsyncLifetime
 {
     private WebApplication? _server;
-    private IPlaywright? _playwright;
 
-    public IBrowser Browser { get; private set; } = null!;
     public string BaseUrl { get; private set; } = "";
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
-        if (Environment.GetEnvironmentVariable("RUN_E2E") != "1") return;
+        if (!E2EFactAttribute.Enabled) return;
 
         var siteDir = Environment.GetEnvironmentVariable("E2E_SITE_DIR") ?? PublishApp();
         siteDir = Path.GetFullPath(siteDir);
@@ -35,6 +35,7 @@ public sealed class AppFixture : IAsyncLifetime
 
         var builder = WebApplication.CreateSlimBuilder();
         builder.WebHost.UseUrls("http://127.0.0.1:0");
+        builder.Logging.SetMinimumLevel(LogLevel.Warning);
         _server = builder.Build();
         var files = new PhysicalFileProvider(siteDir);
         _server.UseDefaultFiles(new DefaultFilesOptions { FileProvider = files, RequestPath = basePath });
@@ -47,20 +48,10 @@ public sealed class AppFixture : IAsyncLifetime
         });
         await _server.StartAsync();
         BaseUrl = _server.Urls.First() + basePath + "/";
-
-        _playwright = await Playwright.CreateAsync();
-        Browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
-        {
-            Headless = true,
-            // Optional: point at an installed Chrome instead of Playwright's bundled Chromium.
-            ExecutablePath = Environment.GetEnvironmentVariable("PLAYWRIGHT_CHROMIUM_EXECUTABLE"),
-        });
     }
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
-        if (Browser is not null) await Browser.CloseAsync();
-        _playwright?.Dispose();
         if (_server is not null) await _server.DisposeAsync();
     }
 
@@ -88,6 +79,3 @@ public sealed class AppFixture : IAsyncLifetime
         return dir?.FullName ?? throw new DirectoryNotFoundException("Could not find Blazor2048.sln");
     }
 }
-
-[CollectionDefinition(nameof(AppCollection))]
-public sealed class AppCollection : ICollectionFixture<AppFixture>;

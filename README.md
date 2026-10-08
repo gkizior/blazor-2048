@@ -21,9 +21,9 @@ Play it on your iPhone straight from Safari — no Mac, no App Store, no fees.
 |---|---|
 | `src/Game2048.Core` | Pure C# game logic (`Game.cs`): sliding, merging, spawning, win/lose |
 | `src/Blazor2048` | Blazor WebAssembly PWA. `Components/GameBoard.razor` is the whole game UI |
-| `tests/Blazor2048.Tests` | xUnit tests for the move and merge rules |
+| `tests/Blazor2048.Tests` | xUnit v3 tests for the move and merge rules |
 | `tests/Blazor2048.ComponentTests` | bUnit tests for the `GameBoard` component (render, keys, swipes, New Game, overlays) |
-| `tests/Blazor2048.E2ETests` | Playwright for .NET end-to-end tests against the published app (opt-in locally) |
+| `tests/Blazor2048.E2ETests` | Playwright for .NET end-to-end tests (`Microsoft.Playwright.Xunit.v3`) against the published app (opt-in locally) |
 | `scripts/prepare-pages.py` | Sets `<base href>` for GitHub Pages and adds `404.html` and `.nojekyll` |
 | `.github/workflows/deploy.yml` | Builds, tests, publishes, and deploys to GitHub Pages |
 
@@ -39,7 +39,8 @@ Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download).
 ```bash
 git clone https://github.com/gkizior/blazor-2048.git
 cd blazor-2048
-dotnet test                       # run the unit tests
+dotnet test                       # xUnit v3 + bUnit tests (Microsoft.Testing.Platform, see global.json)
+RUN_E2E=1 dotnet test --project tests/Blazor2048.E2ETests   # Playwright E2E tests (needs `playwright.ps1 install chromium` once)
 dotnet run --project src/Blazor2048
 ```
 

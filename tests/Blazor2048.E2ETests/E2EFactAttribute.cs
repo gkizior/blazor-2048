@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace Blazor2048.E2ETests;
 
 /// <summary>
@@ -6,9 +8,11 @@ namespace Blazor2048.E2ETests;
 /// </summary>
 public sealed class E2EFactAttribute : FactAttribute
 {
-    public E2EFactAttribute()
+    public static bool Enabled => Environment.GetEnvironmentVariable("RUN_E2E") == "1";
+
+    public E2EFactAttribute([CallerFilePath] string? sourceFilePath = null, [CallerLineNumber] int sourceLineNumber = -1)
+        : base(sourceFilePath, sourceLineNumber)
     {
-        if (Environment.GetEnvironmentVariable("RUN_E2E") != "1")
-            Skip = "E2E tests are opt-in. Set RUN_E2E=1 to run them.";
+        if (!Enabled) Skip = "E2E tests are opt-in. Set RUN_E2E=1 to run them.";
     }
 }

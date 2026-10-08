@@ -32,9 +32,10 @@ jobs:
       - name: Build
         run: dotnet build Blazor2048.sln -c Release --no-restore
 
-      # xUnit logic tests + bUnit component tests (Playwright E2E tests skip here; see the e2e job)
+      # xUnit v3 logic tests + bUnit component tests (Playwright E2E tests skip here; see the e2e job).
+      # global.json opts `dotnet test` into Microsoft.Testing.Platform, which xUnit v3 uses.
       - name: Test (logic + bUnit)
-        run: dotnet test Blazor2048.sln -c Release --no-build --logger "console;verbosity=normal"
+        run: dotnet test --solution Blazor2048.sln -c Release --no-build
 
       - name: Publish
         run: dotnet publish src/Blazor2048/Blazor2048.csproj -c Release -o publish --no-restore
@@ -76,7 +77,7 @@ jobs:
         env:
           RUN_E2E: "1"
           E2E_SITE_DIR: ${{ github.workspace }}/publish/wwwroot
-        run: dotnet test tests/Blazor2048.E2ETests -c Release --no-build --logger "console;verbosity=normal"
+        run: dotnet test --project tests/Blazor2048.E2ETests -c Release --no-build
 
   deploy:
     if: github.event_name != 'pull_request'
