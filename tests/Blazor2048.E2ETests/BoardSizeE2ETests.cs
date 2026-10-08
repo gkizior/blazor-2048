@@ -113,7 +113,7 @@ public class BoardSizeE2ETests(SiteServer site) : AppTest(site)
 
         foreach (var (text, message) in new[]
         {
-            ("1", "Boards start at 2×2"), ("0", "Boards start at 2×2"), ("-4", "Boards start at 2×2"),
+            ("-1", "negative size"), ("-4", "negative size"), ("1.5", "without decimals"),
             ("abc", "is not a number"), ("7.5", "without decimals"), ("", "Enter a whole number"), ("999", "The largest board is"),
         })
         {
@@ -128,6 +128,88 @@ public class BoardSizeE2ETests(SiteServer site) : AppTest(site)
         await page.Keyboard.PressAsync("Escape");
         await Expect(page.Locator(".size-dialog")).ToHaveCountAsync(0);
         Assert.Null(await page.EvaluateAsync<string?>("localStorage.getItem('blazor2048.size')"));
+    }
+
+    private static async Task StartCustomAsync(IPage page, string text)
+    {
+        await PickAsync(page, "custom");
+        await page.Locator("#custom-size").FillAsync(text);
+        await page.Keyboard.PressAsync("Enter");
+    }
+
+    [E2EFact]
+    public async Task Secret_1x1_Is_An_Instant_256_Win_And_Not_Remembered()
+    {
+        var page = await OpenAsync(new BrowserNewContextOptions { ViewportSize = new ViewportSize { Width = 1280, Height = 800 } });
+        await PickAsync(page, "6");
+        await StartCustomAsync(page, "1");
+
+        var board = page.Locator(".board");
+        await Expect(board).ToHaveAttributeAsync("data-size", "1");
+        await Expect(page).ToHaveTitleAsync("256");
+        await Expect(page.Locator("h1.title")).ToHaveTextAsync("256");
+        await Expect(page.Locator(".board .tile")).ToHaveCountAsync(1);
+        await Expect(page.Locator(".board .tile")).ToHaveAttributeAsync("data-value", "256");
+        var overlay = page.Locator(".overlay.instant-win");
+        await Expect(overlay).ToContainTextAsync("You made 256!");
+        await Expect(overlay).ToBeVisibleAsync();
+        Assert.All(await FitsAsync(page), ok => Assert.True(ok, "1x1 overflows the viewport"));
+
+        foreach (var key in new[] { "ArrowLeft", "ArrowUp", "ArrowRight", "ArrowDown" }) await page.Keyboard.PressAsync(key);
+        Assert.Equal("0", await board.GetAttributeAsync("data-moves"));
+        Assert.Equal(1, await page.Locator(".board .tile").CountAsync());
+
+        // Not remembered: a reload goes back to the last real size (6x6), not to another instant win.
+        Assert.Equal("6", await page.EvaluateAsync<string?>("localStorage.getItem('blazor2048.size')"));
+        await page.ReloadAsync();
+        await Expect(board).ToHaveAttributeAsync("data-size", "6");
+        await Expect(page).ToHaveTitleAsync("8192");
+        await Expect(page.Locator(".overlay")).ToHaveCountAsync(0);
+    }
+
+    [E2EFact]
+    public async Task Secret_0x0_Is_Won_By_Not_Playing_On_A_Phone()
+    {
+        var page = await OpenAsync(new BrowserNewContextOptions
+        {
+            ViewportSize = new ViewportSize { Width = 390, Height = 844 }, IsMobile = true, HasTouch = true, DeviceScaleFactor = 3,
+        });
+        var errors = new List<string>();
+        page.PageError += (_, e) => errors.Add(e);
+        await StartCustomAsync(page, "0");
+
+        var board = page.Locator(".board");
+        await Expect(board).ToHaveAttributeAsync("data-size", "0");
+        await Expect(page).ToHaveTitleAsync("128");
+        await Expect(page.Locator(".overlay.instant-win")).ToContainTextAsync("You won by not playing.");
+        Assert.Equal(0, await page.Locator(".board .cell").CountAsync());
+        Assert.Equal(0, await page.Locator(".board .tile").CountAsync());
+        // The empty board still has a real size (laid out like 1x1) and fits the phone.
+        var box = await board.BoundingBoxAsync();
+        Assert.NotNull(box);
+        Assert.InRange(box.Width, 200, 390);
+        Assert.Equal(box.Width, box.Height, 1);
+        Assert.All(await FitsAsync(page), ok => Assert.True(ok, "0x0 overflows the viewport"));
+
+        // Real swipes and keys: nothing to move, nothing breaks.
+        var cdp = await page.Context.NewCDPSessionAsync(page);
+        var (cx, cy) = (box.X + box.Width / 2, box.Y + box.Height / 2);
+        foreach (var (dx, dy) in new[] { (-120.0, 0.0), (0.0, -120.0), (120.0, 0.0), (0.0, 120.0) })
+        {
+            await Touch(cdp, "touchStart", cx, cy);
+            await Touch(cdp, "touchMove", cx + dx, cy + dy);
+            await cdp.SendAsync("Input.dispatchTouchEvent", new Dictionary<string, object> { ["type"] = "touchEnd", ["touchPoints"] = Array.Empty<object>() });
+        }
+        await page.Keyboard.PressAsync("ArrowLeft");
+        Assert.Equal("0", await board.GetAttributeAsync("data-moves"));
+        await Expect(page.Locator(".overlay.instant-win")).ToBeVisibleAsync();
+
+        // "Back to 4×4" returns to a real game.
+        await page.Locator(".back-to-real").ClickAsync();
+        await Expect(board).ToHaveAttributeAsync("data-size", "4");
+        await Expect(page).ToHaveTitleAsync("2048");
+        await Expect(page.Locator(".overlay")).ToHaveCountAsync(0);
+        Assert.Empty(errors);
     }
 
     [E2EFact]
