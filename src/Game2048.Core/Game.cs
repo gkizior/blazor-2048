@@ -153,14 +153,14 @@ public sealed class Game
     private static void ThrowIfUnsupported(int size)
     {
         if (!BoardSize.IsSupported(size))
-            throw new ArgumentOutOfRangeException(nameof(size), size, $"Board size must be {BoardSize.RangeText} (or the secret 0 or 1).");
+            throw new ArgumentOutOfRangeException(nameof(size), size, $"Board size must be {BoardSize.RangeText} (or the secret 1).");
     }
 
     /// <summary>
-    /// True on the secret 1×1 and 0×0 boards: the game is won before the first move and no move is
-    /// possible (spec 011, User Story 7).
+    /// True on the secret 1×1 board: the game is won before the first move and no move is possible
+    /// (spec 011, User Story 7).
     /// </summary>
-    public bool IsInstantWin => Size < BoardSize.Min;
+    public bool IsInstantWin => BoardSize.IsSecret(Size);
 
     public void NewGame()
     {
@@ -172,14 +172,11 @@ public sealed class Game
 
         if (IsInstantWin)
         {
-            // 1×1: the only cell already holds the target (256). 0×0: there is nothing at all.
-            // Either way the game is won, and over, before it starts; nothing spawns.
-            if (_cells.Length == 1)
-            {
-                _cells[0] = _winningTile;
-                _ids[0] = _nextId++;
-                _flags[0] = FlagNew;
-            }
+            // 1×1: the only cell already holds the target (256), so the game is won, and over,
+            // before it starts; nothing spawns.
+            _cells[0] = _winningTile;
+            _ids[0] = _nextId++;
+            _flags[0] = FlagNew;
             HasWon = true;
             IsGameOver = true;
             return;

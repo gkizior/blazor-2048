@@ -180,6 +180,7 @@ public class BoardSizeUiTests : AppTestContext
     }
 
     [Theory]
+    [InlineData("0", "A 0×0 board has nothing to play")]
     [InlineData("-1", "negative size")]
     [InlineData("-5", "negative size")]
     [InlineData("abc", "is not a number")]

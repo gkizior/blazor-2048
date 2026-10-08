@@ -113,7 +113,7 @@ public class BoardSizeE2ETests(SiteServer site) : AppTest(site)
 
         foreach (var (text, message) in new[]
         {
-            ("-1", "negative size"), ("-4", "negative size"), ("1.5", "without decimals"),
+            ("0", "A 0×0 board has nothing to play"), ("-1", "negative size"), ("-4", "negative size"), ("1.5", "without decimals"),
             ("abc", "is not a number"), ("7.5", "without decimals"), ("", "Enter a whole number"), ("999", "The largest board is"),
         })
         {
@@ -168,7 +168,7 @@ public class BoardSizeE2ETests(SiteServer site) : AppTest(site)
     }
 
     [E2EFact]
-    public async Task Secret_0x0_Is_Won_By_Not_Playing_On_A_Phone()
+    public async Task Secret_1x1_On_A_Phone_Ignores_Swipes_And_Goes_Back()
     {
         var page = await OpenAsync(new BrowserNewContextOptions
         {
@@ -176,20 +176,23 @@ public class BoardSizeE2ETests(SiteServer site) : AppTest(site)
         });
         var errors = new List<string>();
         page.PageError += (_, e) => errors.Add(e);
+
+        // 0 is not a board: rejected inline, nothing starts.
         await StartCustomAsync(page, "0");
+        await Expect(page.Locator("#custom-size-error")).ToContainTextAsync("A 0×0 board has nothing to play");
+        Assert.Equal("4", await page.Locator(".board").GetAttributeAsync("data-size"));
+
+        await page.Locator("#custom-size").FillAsync("1");
+        await page.Keyboard.PressAsync("Enter");
 
         var board = page.Locator(".board");
-        await Expect(board).ToHaveAttributeAsync("data-size", "0");
-        await Expect(page).ToHaveTitleAsync("128");
-        await Expect(page.Locator(".overlay.instant-win")).ToContainTextAsync("You won by not playing.");
-        Assert.Equal(0, await page.Locator(".board .cell").CountAsync());
-        Assert.Equal(0, await page.Locator(".board .tile").CountAsync());
-        // The empty board still has a real size (laid out like 1x1) and fits the phone.
+        await Expect(board).ToHaveAttributeAsync("data-size", "1");
+        await Expect(page).ToHaveTitleAsync("256");
+        await Expect(page.Locator(".overlay.instant-win")).ToContainTextAsync("One tile, zero moves.");
         var box = await board.BoundingBoxAsync();
         Assert.NotNull(box);
         Assert.InRange(box.Width, 200, 390);
-        Assert.Equal(box.Width, box.Height, 1);
-        Assert.All(await FitsAsync(page), ok => Assert.True(ok, "0x0 overflows the viewport"));
+        Assert.All(await FitsAsync(page), ok => Assert.True(ok, "1x1 overflows the phone"));
 
         // Real swipes and keys: nothing to move, nothing breaks.
         var cdp = await page.Context.NewCDPSessionAsync(page);
@@ -202,7 +205,7 @@ public class BoardSizeE2ETests(SiteServer site) : AppTest(site)
         }
         await page.Keyboard.PressAsync("ArrowLeft");
         Assert.Equal("0", await board.GetAttributeAsync("data-moves"));
-        await Expect(page.Locator(".overlay.instant-win")).ToBeVisibleAsync();
+        await Expect(page.Locator(".board .tile")).ToHaveAttributeAsync("data-value", "256");
 
         // "Back to 4×4" returns to a real game.
         await page.Locator(".back-to-real").ClickAsync();

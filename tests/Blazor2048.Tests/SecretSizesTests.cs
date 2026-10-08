@@ -2,7 +2,7 @@ using Game2048.Core;
 
 namespace Blazor2048.Tests;
 
-/// <summary>The secret 1×1 and 0×0 boards win right away (spec 011, User Story 7).</summary>
+/// <summary>The secret 1×1 board wins right away; there is no 0×0 board (spec 011, User Story 7).</summary>
 public class SecretSizesTests
 {
     private static readonly Direction[] AllDirections = [Direction.Up, Direction.Down, Direction.Left, Direction.Right];
@@ -30,31 +30,9 @@ public class SecretSizesTests
     }
 
     [Fact]
-    public void Zero_By_Zero_Is_An_Empty_Board_Already_Won()
+    public void No_Move_Changes_Anything_And_Nothing_Throws()
     {
-        var game = new Game(0, new Random(1));
-
-        Assert.True(game.IsInstantWin);
-        Assert.Equal(128, game.WinningTile);
-        Assert.Equal(0, game.Size);
-        Assert.Empty(game.Tiles);
-        Assert.Empty(game.RenderTiles);
-        Assert.Empty(game.RetiredTiles);
-        Assert.Equal(0, game.Board.Length);
-        Assert.Null(game.SpawnedCell);
-        Assert.Equal(0, game.Score);
-        Assert.True(game.HasWon);
-        Assert.True(game.IsGameOver);
-        Assert.False(game.CanMove());
-        Assert.False(game.AddRandomTile());
-    }
-
-    [Theory]
-    [InlineData(0)]
-    [InlineData(1)]
-    public void No_Move_Changes_Anything_And_Nothing_Throws(int size)
-    {
-        var game = new Game(size, new Random(7));
+        var game = new Game(1, new Random(7));
         var before = game.Board;
 
         foreach (var d in AllDirections) Assert.False(game.Move(d));
@@ -65,33 +43,29 @@ public class SecretSizesTests
         Assert.False(game.KeepPlaying);
     }
 
-    [Theory]
-    [InlineData(0)]
-    [InlineData(1)]
-    public void Continue_Has_Nothing_To_Continue(int size)
+    [Fact]
+    public void Continue_Has_Nothing_To_Continue()
     {
-        var game = new Game(size);
+        var game = new Game(1);
         game.Continue();
         Assert.False(game.KeepPlaying);
         Assert.True(game.HasWon);
     }
 
-    [Theory]
-    [InlineData(0)]
-    [InlineData(1)]
-    public void New_Games_Win_Again_And_Sizes_Switch_Both_Ways(int size)
+    [Fact]
+    public void New_Games_Win_Again_And_Sizes_Switch_Both_Ways()
     {
         var game = new Game(4, new Random(3));
         game.Move(Direction.Left);
 
-        game.NewGame(size);
+        game.NewGame(1);
         Assert.True(game.IsInstantWin);
         Assert.True(game.HasWon);
-        Assert.Equal(size, game.Tiles.Count); // 1×1: one tile, 0×0: none
+        Assert.Single(game.Tiles);
 
         game.NewGame();
         Assert.True(game.HasWon);
-        Assert.Equal(size, game.Tiles.Count);
+        Assert.Single(game.Tiles);
 
         game.NewGame(6);
         Assert.False(game.IsInstantWin);
@@ -112,16 +86,22 @@ public class SecretSizesTests
     }
 
     [Fact]
-    public void SetBoard_Works_On_Tiny_Boards()
+    public void SetBoard_Works_On_The_1x1_Board()
     {
-        var zero = new Game(0);
-        zero.SetBoard(new int[0, 0]);
-        Assert.True(zero.IsGameOver);
-
         var one = new Game(1);
         one.SetBoard(new int[1, 1] { { 0 } });
         Assert.False(one.IsGameOver); // an empty cell can still take a spawn
         Assert.True(one.AddRandomTile());
         Assert.False(one.CanMove());
+    }
+
+    [Fact]
+    public void There_Is_No_Zero_By_Zero_Board()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Game(0));
+        var game = new Game(1);
+        Assert.Throws<ArgumentOutOfRangeException>(() => game.NewGame(0));
+        Assert.Equal(1, game.Size); // unchanged
+        Assert.False(BoardSize.TryParse("0", out _, out _));
     }
 }

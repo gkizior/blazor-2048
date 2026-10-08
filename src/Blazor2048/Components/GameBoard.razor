@@ -62,18 +62,10 @@
 
         @if (game.IsInstantWin)
         {
-            @* The secret 1x1 and 0x0 boards (spec 011, User Story 7): won before the first move. *@
+            @* The secret 1x1 board (spec 011, User Story 7): won before the first move. *@
             <div class="overlay win instant-win" data-size="@game.Size">
-                @if (game.Size == 1)
-                {
-                    <p>You made @sizeText.Target!</p>
-                    <p class="overlay-sub">One tile, zero moves. Speedrun complete.</p>
-                }
-                else
-                {
-                    <p>You won by not playing.</p>
-                    <p class="overlay-sub">No tiles, no moves, no regrets.</p>
-                }
+                <p>You made @sizeText.Target!</p>
+                <p class="overlay-sub">One tile, zero moves. Speedrun complete.</p>
                 <div class="overlay-buttons">
                     <button class="btn" @onclick="NewGame">Play again</button>
                     <button class="btn back-to-real" @onclick="BackToRealSize">Back to @(lastRealSize)×@(lastRealSize)</button>
@@ -119,9 +111,8 @@
         public static SizeText For(int n)
         {
             var target = BoardSize.WinningTile(n).ToString(CultureInfo.InvariantCulture);
-            // The empty 0x0 board is laid out like a 1x1 board, so the CSS never divides by zero.
-            var hint = n switch { 0 => "No tiles to join, get to", 1 => "Join the tile, get to", _ => "Join the tiles, get to" };
-            return new(target, $"--n:{Math.Max(n, 1)}", $"--digits:{target.Length}", $"{target} board, {n} by {n}", hint);
+            var hint = n == 1 ? "Join the tile, get to" : "Join the tiles, get to";
+            return new(target, $"--n:{n}", $"--digits:{target.Length}", $"{target} board, {n} by {n}", hint);
         }
     }
 
@@ -137,7 +128,7 @@
 
     private ElementReference gameRoot;
     private int best;
-    private int lastRealSize = BoardSize.Default; // the last playable size (2…Max): where "Back to N×N" goes from a secret board
+    private int lastRealSize = BoardSize.Default; // the last playable size (2…Max): where "Back to N×N" goes from the 1x1 board
     private int moves; // successful moves this session (exposed as data-moves for E2E checks)
     private (double X, double Y)? touchStart;
     private bool ready;    // the saved board size has been applied (the board stays hidden until then)

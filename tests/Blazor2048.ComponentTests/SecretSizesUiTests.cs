@@ -8,8 +8,8 @@ using Microsoft.AspNetCore.Components.Web;
 namespace Blazor2048.ComponentTests;
 
 /// <summary>
-/// The secret 1×1 and 0×0 boards from Custom…: instant win screens, the name, no moves, and what is
-/// (not) remembered (spec 011, User Story 7).
+/// The secret 1×1 board from Custom…: the instant win screen, the name, no moves, and what is (not)
+/// remembered. 0 is rejected (spec 011, User Story 7 and its fourth follow-up).
 /// </summary>
 public class SecretSizesUiTests : AppTestContext
 {
@@ -69,35 +69,22 @@ public class SecretSizesUiTests : AppTestContext
     }
 
     [Fact]
-    public void Zero_By_Zero_Is_Won_By_Not_Playing()
+    public void Zero_Is_Rejected_In_The_Dialog()
     {
         var cut = RenderReady();
         StartCustom(cut, "0");
 
-        Assert.Equal(0, Game.Size);
-        Assert.Empty(cut.FindAll(".cell"));
-        Assert.Empty(cut.FindAll(".tile-layer .tile"));
-        Assert.Equal("128", cut.Find("h1.title").TextContent.Trim());
-        Assert.Equal("128", PageTitleText(cut));
-        Assert.Equal("No tiles to join, get to 128!", cut.Find(".hint").TextContent.Trim());
-        Assert.Equal("128 board, 0 by 0", cut.Find(".board").GetAttribute("aria-label"));
-        // Laid out like a 1×1 board, so the CSS sizing never divides by zero.
-        Assert.Contains("--n:1", cut.Find(".game").GetAttribute("style"));
-        Assert.Equal("0", cut.Find(".board").GetAttribute("data-size"));
-
-        var overlay = Overlay(cut);
-        Assert.Contains("You won by not playing.", overlay.TextContent);
-        Assert.Contains("No tiles, no moves, no regrets.", overlay.TextContent);
-        Assert.Contains("New Game, 0 by 0", cut.Find(".split-btn .new-game").GetAttribute("aria-label"));
+        Assert.Contains("A 0×0 board has nothing to play", cut.Find("#custom-size-error").TextContent);
+        Assert.Equal("true", cut.Find("#custom-size").GetAttribute("aria-invalid"));
+        Assert.Equal(4, Game.Size);
+        Assert.Empty(cut.FindAll(".overlay"));
     }
 
-    [Theory]
-    [InlineData("1")]
-    [InlineData("0")]
-    public void Keys_And_Swipes_Do_Nothing(string size)
+    [Fact]
+    public void Keys_And_Swipes_Do_Nothing()
     {
         var cut = RenderReady();
-        StartCustom(cut, size);
+        StartCustom(cut, "1");
         var markup = cut.Find(".board").OuterHtml;
 
         foreach (var key in new[] { "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "w", "a", "s", "d" })
@@ -110,16 +97,14 @@ public class SecretSizesUiTests : AppTestContext
         Assert.True(Game.HasWon);
     }
 
-    [Theory]
-    [InlineData("1")]
-    [InlineData("0")]
-    public void Not_Saved_As_The_Last_Size_And_No_Best(string size)
+    [Fact]
+    public void Not_Saved_As_The_Last_Size_And_No_Best()
     {
         JSInterop.Setup<string?>("localStorage.getItem", "blazor2048.best.4x4").SetResult("1200");
         var cut = RenderReady();
         cut.WaitForAssertion(() => Assert.Equal("1200", Best(cut)));
 
-        StartCustom(cut, size);
+        StartCustom(cut, "1");
 
         Assert.Equal("–", Best(cut));
         Assert.DoesNotContain("blazor2048.size", SavedKeys());
@@ -151,13 +136,16 @@ public class SecretSizesUiTests : AppTestContext
     }
 
     [Fact]
-    public void Main_Button_Restarts_The_Tiny_Board_And_Menu_Keeps_The_Secret()
+    public void Main_Button_Restarts_The_1x1_Board_And_Menu_Keeps_The_Secret()
     {
         var cut = RenderReady();
-        StartCustom(cut, "0");
+        StartCustom(cut, "1");
+        var firstId = cut.Find(".tile-layer .tile").GetAttribute("data-id");
 
         cut.Find(".split-btn .new-game").Click();
-        Assert.Equal(0, Game.Size);
+        Assert.Equal(1, Game.Size);
+        Assert.NotEqual(firstId, cut.Find(".tile-layer .tile").GetAttribute("data-id"));
+        Assert.Contains("New Game, 1 by 1", cut.Find(".split-btn .new-game").GetAttribute("aria-label"));
         Assert.NotNull(Overlay(cut));
 
         cut.Find("#size-menu-button").Click();
@@ -165,16 +153,16 @@ public class SecretSizesUiTests : AppTestContext
         Assert.Equal(["4", "5", "6", "7", "8", "9", "10", "custom"], items.Select(i => i.GetAttribute("data-size")));
         var custom = cut.Find(".size-option[data-size='custom']");
         Assert.Equal("true", custom.GetAttribute("aria-checked"));
-        Assert.Contains("0×0", custom.TextContent);
+        Assert.Contains("1×1", custom.TextContent);
         custom.Click();
-        Assert.Contains("(2 to 16)", cut.Find("label[for=custom-size]").TextContent); // never mentions 0 or 1
-        Assert.Equal("0", cut.Find("#custom-size").GetAttribute("value"));
+        Assert.Contains("(2 to 16)", cut.Find("label[for=custom-size]").TextContent); // never mentions 1
+        Assert.Equal("1", cut.Find("#custom-size").GetAttribute("value"));
     }
 
     [Theory]
     [InlineData("1")]
     [InlineData("0")]
-    public void A_Saved_Secret_Size_Is_Never_Restored(string saved)
+    public void A_Saved_1_Or_0_Is_Never_Restored(string saved)
     {
         JSInterop.Setup<string?>("localStorage.getItem", "blazor2048.size").SetResult(saved);
         var cut = RenderReady();
