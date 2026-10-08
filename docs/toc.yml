@@ -113,3 +113,10 @@
           href: ../specs/011-board-sizes/plan.md
         - name: Tasks
           href: ../specs/011-board-sizes/tasks.md
+    - name: 012 Purple app icons
+      href: ../specs/012-purple-app-icons/spec.md
+      items:
+        - name: Plan
+          href: ../specs/012-purple-app-icons/plan.md
+        - name: Tasks
+          href: ../specs/012-purple-app-icons/tasks.md
