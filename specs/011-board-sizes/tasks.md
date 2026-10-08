@@ -5,6 +5,7 @@
 ## Phase 1: Spec
 
 - [x] T001 Spec, plan and tasks for 011; constitution 1.1.0 (principle IX) — (spec commit)
+- [x] T001a Spec update: the name follows the target, 2^(N+7) (second follow-up) — (spec update commit)
 
 ## Phase 2: Engine (US1, US2, US5)
 
@@ -16,6 +17,7 @@
 - [ ] T004 Split New Game button with menu and Custom… dialog; validation
 - [ ] T005 Per-size best score, last size, 4x4 migration
 - [ ] T006 Board, gaps and tile labels scale with N; compact labels for large values
+- [ ] T006a The name easter egg: title, tab title, hint, win message and accessible name show 2^(N+7)
 - [ ] T007 [P] bUnit tests: split button, menu keyboard/ARIA, dialog, validation, persistence
 - [ ] T008 [P] Playwright tests: presets, custom, invalid input, persistence, 10x10 rapid input
 
