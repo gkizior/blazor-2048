@@ -88,7 +88,7 @@ public sealed class Game
 
     public Game(int size = BoardSize.Default, Random? random = null)
     {
-        if (!BoardSize.IsValid(size)) throw new ArgumentOutOfRangeException(nameof(size), size, $"Board size must be {BoardSize.RangeText}.");
+        ThrowIfUnsupported(size);
         _random = random ?? new Random();
         Resize(size);
         NewGame();
@@ -145,10 +145,22 @@ public sealed class Game
     /// <summary>Starts a new game on a board of <paramref name="size"/>×<paramref name="size"/>.</summary>
     public void NewGame(int size)
     {
-        if (!BoardSize.IsValid(size)) throw new ArgumentOutOfRangeException(nameof(size), size, $"Board size must be {BoardSize.RangeText}.");
+        ThrowIfUnsupported(size);
         if (size != Size) Resize(size);
         NewGame();
     }
+
+    private static void ThrowIfUnsupported(int size)
+    {
+        if (!BoardSize.IsSupported(size))
+            throw new ArgumentOutOfRangeException(nameof(size), size, $"Board size must be {BoardSize.RangeText} (or the secret 0 or 1).");
+    }
+
+    /// <summary>
+    /// True on the secret 1×1 and 0×0 boards: the game is won before the first move and no move is
+    /// possible (spec 011, User Story 7).
+    /// </summary>
+    public bool IsInstantWin => Size < BoardSize.Min;
 
     public void NewGame()
     {
@@ -157,12 +169,31 @@ public sealed class Game
         HasWon = false;
         KeepPlaying = false;
         IsGameOver = false;
+
+        if (IsInstantWin)
+        {
+            // 1×1: the only cell already holds the target (256). 0×0: there is nothing at all.
+            // Either way the game is won, and over, before it starts; nothing spawns.
+            if (_cells.Length == 1)
+            {
+                _cells[0] = _winningTile;
+                _ids[0] = _nextId++;
+                _flags[0] = FlagNew;
+            }
+            HasWon = true;
+            IsGameOver = true;
+            return;
+        }
+
         AddRandomTile();
         AddRandomTile();
     }
 
-    /// <summary>Lets the player continue after reaching the target tile.</summary>
-    public void Continue() => KeepPlaying = true;
+    /// <summary>Lets the player continue after reaching the target tile (nothing to continue on an instant win).</summary>
+    public void Continue()
+    {
+        if (!IsInstantWin) KeepPlaying = true;
+    }
 
     /// <summary>Loads a specific board (used by tests).</summary>
     public void SetBoard(int[,] board, int score = 0)

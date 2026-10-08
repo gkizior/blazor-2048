@@ -19,15 +19,26 @@ public static class BoardSize
     /// <summary>Sizes offered directly in the New Game menu.</summary>
     public static IReadOnlyList<int> Presets { get; } = [4, 5, 6, 7, 8, 9, 10];
 
+    /// <summary>A playable size, <see cref="Min"/> to <see cref="Max"/> (what gets saved and offered).</summary>
     public static bool IsValid(int size) => size is >= Min and <= Max;
+
+    /// <summary>
+    /// The secret sizes, 0 and 1: Custom… accepts them and they win right away (a 1×1 board holds one
+    /// tile that is already its target; a 0×0 board has nothing to play). They are never saved as the
+    /// last size, never get a best score and are not in the menu. See spec 011, User Story 7.
+    /// </summary>
+    public static bool IsSecret(int size) => size is 0 or 1;
+
+    /// <summary>Any size a <see cref="Game"/> can start: the playable range plus the secret sizes.</summary>
+    public static bool IsSupported(int size) => IsValid(size) || IsSecret(size);
 
     /// <summary>The range as shown to players, for example "2 to 16".</summary>
     public static string RangeText => $"{Min} to {Max}";
 
     /// <summary>
     /// Parses a custom size typed by the player. Accepts a whole number from <see cref="Min"/> to
-    /// <see cref="Max"/> (surrounding spaces allowed). Otherwise returns false and a message that says
-    /// what is wrong and what is allowed.
+    /// <see cref="Max"/> (surrounding spaces allowed), and the secret sizes 0 and 1 (which the messages
+    /// never mention). Otherwise returns false and a message that says what is wrong and what is allowed.
     /// </summary>
     public static bool TryParse(string? text, out int size, out string error)
     {
@@ -45,9 +56,9 @@ public static class BoardSize
             var negative = s[0] == '-';
             // Very long digit strings are simply "too big"; no overflow.
             if (!int.TryParse(digits, NumberStyles.None, CultureInfo.InvariantCulture, out var n)) n = int.MaxValue;
-            if (negative || n < Min)
+            if (negative)
             {
-                error = $"Boards start at {Min}×{Min}. Enter a whole number from {RangeText}.";
+                error = $"Boards can't have a negative size. Enter a whole number from {RangeText}.";
                 return false;
             }
             if (n > Max)
@@ -73,11 +84,12 @@ public static class BoardSize
 
     /// <summary>
     /// The tile that wins, and the game's "name" at this size: 2^(N+7). 4×4 → 2048, 5×5 → 4096 …
-    /// 10×10 → 131072; 2×2 → 512, 3×3 → 1024. Fits in an int up to N = 23 (Max is well below).
+    /// 10×10 → 131072; 2×2 → 512, 3×3 → 1024; the secret 1×1 → 256 and 0×0 → 128. Fits in an int up
+    /// to N = 23 (Max is well below).
     /// </summary>
     public static int WinningTile(int size)
     {
-        ArgumentOutOfRangeException.ThrowIfLessThan(size, 1);
+        ArgumentOutOfRangeException.ThrowIfNegative(size);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(size, 23);
         return 1 << (size + 7);
     }
