@@ -137,7 +137,12 @@ immediately and Blazor re-renders:
   so the next render doesn't touch the class and can't cancel or restart the animation.
 - Retired merge sources are removed on the next move, as in the original game.
 
-Nothing is queued or dropped.
+Nothing is queued or dropped. Each key is handled in order: `GameBoard.MoveAsync` applies the move
+synchronously, before its only `await` (the best-score save), and Blazor WebAssembly runs on one
+thread, so a key that arrives while a save is still in flight simply moves the board again. A key
+that cannot move anything (pushing tiles against a wall) is ignored and does not count as a move,
+as in any 2048, so "one move per key" only holds for keys that can move the board. The tests
+account for that exactly (see [Testing](testing.md)).
 
 ### Rendering cost
 

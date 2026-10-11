@@ -24,6 +24,9 @@ public abstract class AppTest(SiteServer site) : BrowserTest
     {
         var context = await NewContext(options ?? new BrowserNewContextOptions());
         var page = await context.NewPageAsync();
+        // Optional: E2E_CPU_THROTTLE=4 slows the page's CPU 4x (Chromium only), as on a slow phone or a busy CI runner.
+        if (int.TryParse(Environment.GetEnvironmentVariable("E2E_CPU_THROTTLE"), out var rate) && rate > 1)
+            await (await context.NewCDPSessionAsync(page)).SendAsync("Emulation.setCPUThrottlingRate", new Dictionary<string, object> { ["rate"] = rate });
         await page.GotoAsync(Site.BaseUrl + path);
         await page.Locator(".board .cell").First.WaitForAsync(new() { Timeout = 60_000 });
         return page;

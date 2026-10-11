@@ -53,6 +53,13 @@ loading, the theme toggle cycling and setting `data-theme` on the layout root, t
 the footer's name and build info, the docs button, and the docs page (TOC, filter, rendered
 Markdown, diagrams, not-found) with a fake `IDocsSource`.
 
+Rapid input runs in lockstep with a twin `Game` on the same random seed, so every spawn is
+predictable: after each of 13 keys the rendered board, the score and `data-moves` must match the
+twin (an opening key that can't move anything must not count). A second run leaves every
+best-score save pending (`JSInterop.SetupVoid` with no result) to prove keys that arrive while a
+save is in flight are neither lost nor reordered; a deliberately added "busy while saving" guard
+makes it fail.
+
 Board sizes (`BoardSizeUiTests`): the split button's ARIA attributes; the menu's items, checked
 state and roving focus (which element `FocusAsync` targeted is checked against the `@ref` ids bUnit
 prints); ArrowUp/ArrowDown wrapping, Home/End, Escape returning focus to the caret, Tab and the
@@ -80,7 +87,13 @@ is never restored.
   `BROWSER`/`HEADED` environment variables) and adds `OpenAsync()`.
 - Tests: app loads and focuses the board; arrow keys move tiles; the layout fits iPhone screens;
   dark mode persists across a reload; docs open and show a rendered Mermaid diagram; rapid key
-  presses during animations are all applied; no console errors.
+  presses during animations are all applied, in order; no console errors.
+- Rapid-input tests use `InputLedger`: the page records the board after every move (a test-side
+  `MutationObserver` on `data-moves`), and the test replays the keys against its own slide oracle.
+  Every key that can move the board it lands on must produce exactly the next recorded board (that
+  board slid plus one new tile); a key that cannot move it must change nothing. This replaced a
+  check that expected one move per key, which failed about 1 run in 20 when a random start board
+  had both tiles on the left edge already (spec 004, T014).
 - `BoardSizeE2ETests`: every preset (cells, title, tab title, hint, fits a 1280x800 window, focus
   back on the board); the menu from the keyboard; click-outside; a custom 12x12; invalid custom input
   rejected inline; the size and the per-size best surviving a reload; rapid input on a filled 10x10
@@ -95,7 +108,8 @@ is never restored.
   the target before they are removed, the merged tile stays invisible until they arrive, rapid
   input never snaps a spawn/pop animation, and retargeted slides never jump.
 
-E2E tests are opt-in locally because they need a browser:
+E2E tests are opt-in locally because they need a browser. Set `E2E_CPU_THROTTLE=4` to run pages
+opened with `OpenAsync` under 4x CPU throttling (Chromium):
 
 ```bash
 # once: install Chromium for Playwright

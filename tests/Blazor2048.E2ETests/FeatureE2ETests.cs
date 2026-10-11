@@ -140,15 +140,22 @@ public class FeatureE2ETests(SiteServer site) : AppTest(site)
     public async Task Rapid_Key_Presses_During_Animations_Are_Not_Dropped()
     {
         var page = await OpenAsync();
-        var board = page.Locator(".board");
-        var start = int.Parse((await board.GetAttributeAsync("data-moves"))!);
+        var (size, start) = await InputLedger.StartAsync(page);
 
-        // A fresh board has a few small tiles, so alternating left/right always changes it.
-        // No waits between presses: every one lands mid-animation.
-        foreach (var key in new[] { "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight" })
+        // Start with a direction that moves this (random) board, then go back and forth along the
+        // same axis. The old version always started with ArrowLeft and expected four moves, which
+        // failed about 1 run in 20: when both start tiles were already on the left edge, that press
+        // correctly did nothing (spec 004, T014). The ledger replays every key exactly instead.
+        var first = InputLedger.FirstMovable(start.Cells, size);
+        var keys = Enumerable.Range(0, 8).Select(i => i % 2 == 0 ? first : InputLedger.Opposite(first)).ToArray();
+
+        // No waits between presses: every one lands mid-animation (the slide is 110 ms).
+        foreach (var key in keys)
             await page.Keyboard.PressAsync(key);
 
-        await Expect(board).ToHaveAttributeAsync("data-moves", (start + 4).ToString(), new() { Timeout = 2_000 });
+        var moved = await InputLedger.VerifyAsync(page, size, start, keys);
+        // The first press moves by construction and its opposite always can (at most 3 tiles, so no full row).
+        Assert.True(moved >= 2, $"Only {moved} of {keys.Length} keys could move the board.");
     }
 
     [E2EFact]

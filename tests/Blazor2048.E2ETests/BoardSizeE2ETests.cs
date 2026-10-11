@@ -256,15 +256,17 @@ public class BoardSizeE2ETests(SiteServer site) : AppTest(site)
         // Fill the board some (left/right only piles tiles up), then press keys every 40 ms.
         for (var i = 0; i < 60; i++) { await page.Keyboard.PressAsync(i % 2 == 0 ? "ArrowLeft" : "ArrowRight"); await page.WaitForTimeoutAsync(10); }
         await page.WaitForTimeoutAsync(300);
-        var start = int.Parse((await board.GetAttributeAsync("data-moves"))!);
+        var (size, start) = await InputLedger.StartAsync(page);
+        Assert.Equal(10, size);
         await AnimationE2ETests.StartSamplingAsync(page);
 
         var keys = new[] { "ArrowDown", "ArrowLeft", "ArrowUp", "ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp", "ArrowRight" };
         foreach (var key in keys) { await page.Keyboard.PressAsync(key); await page.WaitForTimeoutAsync(40); }
-        await page.WaitForTimeoutAsync(500);
 
-        var applied = int.Parse((await board.GetAttributeAsync("data-moves"))!) - start;
-        Assert.True(applied >= keys.Length - 1, $"Only {applied} of {keys.Length} keys moved the board."); // one may be a no-op
+        // Every key that could move the board did, in order (one that can't is ignored).
+        var applied = await InputLedger.VerifyAsync(page, size, start, keys);
+        Assert.True(applied >= 1, "None of the keys could move the board.");
+        await page.WaitForTimeoutAsync(500);
         var r = await AnimationE2ETests.AnalyzeAsync(page);
         Assert.True(r.Frames > 20, $"Only {r.Frames} frames sampled.");
         Assert.Equal(0, r.Teleports);

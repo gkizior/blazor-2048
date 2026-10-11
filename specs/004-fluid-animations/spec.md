@@ -49,7 +49,7 @@ Two tiles slide together, and only when they meet does the doubled tile pop.
 
 1. **Given** a slide in progress, **When** the next key arrives, **Then** the tile retargets from where it is (no jump).
 2. **Given** a spawn or pop in progress, **When** the next move happens, **Then** that animation finishes instead of snapping to full size.
-3. **Given** six keys 40 ms apart, **When** they are pressed, **Then** six moves are applied (no dropped input).
+3. **Given** six keys 40 ms apart (or back to back), **When** they are pressed, **Then** every key that can move the board is applied, in order (no dropped input). A key that cannot move anything, such as Left with every tile already on the left edge, is ignored, as in any 2048.
 
 ### User Story 3 - Reduced motion (Priority: P1)
 

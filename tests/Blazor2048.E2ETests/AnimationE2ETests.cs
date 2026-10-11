@@ -35,8 +35,7 @@ public class AnimationE2ETests(SiteServer site) : AppTest(site)
     public async Task Rapid_Input_Retargets_Slides_Without_Snapping()
     {
         var page = await OpenAsync();
-        var board = page.Locator(".board");
-        var start = int.Parse((await board.GetAttributeAsync("data-moves"))!);
+        var (size, start) = await InputLedger.StartAsync(page);
         await StartSamplingAsync(page);
 
         // Every press lands mid-animation (well inside the 110 ms slide).
@@ -46,12 +45,10 @@ public class AnimationE2ETests(SiteServer site) : AppTest(site)
             await page.Keyboard.PressAsync(key);
             await page.WaitForTimeoutAsync(40);
         }
-        // A press that cannot move anything (random start position) doesn't count, so wait for
-        // the counter to settle instead of expecting exactly one move per key.
-        await Expect(board).Not.ToHaveAttributeAsync("data-moves", start.ToString(), new() { Timeout = 2_000 });
-        await page.WaitForTimeoutAsync(500);
-        var moved = int.Parse((await board.GetAttributeAsync("data-moves"))!) - start;
-        Assert.InRange(moved, 1, keys.Length);
+        // A press that cannot move anything (random start position) is ignored by the game; the
+        // ledger replays the keys and checks that every one that could move did, in order.
+        Assert.InRange(await InputLedger.VerifyAsync(page, size, start, keys), 1, keys.Length);
+        await page.WaitForTimeoutAsync(500); // let the last slide finish before analyzing the frames
 
         var r = await AnalyzeAsync(page);
         Assert.True(r.Frames > 20, $"Only {r.Frames} frames sampled.");

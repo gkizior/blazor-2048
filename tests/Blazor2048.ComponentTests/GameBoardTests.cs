@@ -348,27 +348,78 @@ public class GameBoardTests : AppTestContext
         Assert.Equal(16, cut.FindAll(".board .cell").Count);
     }
 
+    // Same seed as the context's Game: both consume the random tiles in the same order, so the twin
+    // predicts every spawn and the board can be compared cell for cell after each key.
+    private static Game Twin(int[,] board)
+    {
+        var twin = new Game(4, new Random(7));
+        twin.SetBoard(board);
+        return twin;
+    }
+
+    private static readonly int[,] OneTile =
+    {
+        { 2, 0, 0, 0 },
+        { 0, 0, 0, 0 },
+        { 0, 0, 0, 0 },
+        { 0, 0, 0, 0 },
+    };
+
+    private static Direction Dir(string key) => key switch
+    {
+        "ArrowUp" => Direction.Up, "ArrowDown" => Direction.Down, "ArrowLeft" => Direction.Left, _ => Direction.Right,
+    };
+
+    private static int[] Flat(Game g) => Enumerable.Range(0, 16).Select(i => g[i / 4, i % 4]).ToArray();
+
+    // Starts with ArrowLeft on a board whose only tile is already top-left: a key that cannot move anything.
+    private static readonly string[] Burst =
+        ["ArrowLeft", "ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp", "ArrowRight", "ArrowDown", "ArrowLeft", "ArrowLeft", "ArrowUp", "ArrowRight", "ArrowDown", "ArrowUp"];
+
     [Fact]
     public void Rapid_Moves_Are_All_Applied()
     {
-        game.SetBoard(new int[,]
-        {
-            { 2, 0, 0, 0 },
-            { 0, 0, 0, 0 },
-            { 0, 0, 0, 0 },
-            { 0, 0, 0, 0 },
-        });
+        // Every key that can move the board is applied, in order, and counted; one that can't is ignored.
+        game.SetBoard(OneTile);
+        var twin = Twin(OneTile);
         var cut = Render<GameBoard>();
         var root = cut.Find(".game");
-        var applied = 0;
-        foreach (var key in new[] { "ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp", "ArrowRight", "ArrowDown" })
+        var expected = 0;
+        foreach (var key in Burst)
         {
-            var before = string.Join(",", Tiles(cut));
+            if (twin.Move(Dir(key))) expected++;
             root.KeyDown(new KeyboardEventArgs { Key = key });
-            if (string.Join(",", Tiles(cut)) != before) applied++;
+            Assert.Equal(Flat(twin), Tiles(cut));
+            Assert.Equal(expected.ToString(), cut.Find(".board").GetAttribute("data-moves"));
         }
 
-        Assert.True(applied >= 4, $"Only {applied} of 6 moves changed the board.");
+        Assert.True(expected >= 8, $"Only {expected} of {Burst.Length} keys could move the board.");
+        Assert.True(expected < Burst.Length); // the opening ArrowLeft had nothing to move: ignored, not counted
+    }
+
+    [Fact]
+    public void Keys_Are_Applied_In_Order_While_Best_Score_Saves_Are_Still_Pending()
+    {
+        // Spec 004, T015: a move that beats the best score awaits the localStorage save. Keys that
+        // arrive while that save (or several) is still in flight must not be lost or reordered.
+        JSInterop.SetupVoid("localStorage.setItem", inv => (string?)inv.Arguments[0] == "blazor2048.best.4x4"); // never completes
+        game.SetBoard(OneTile);
+        var twin = Twin(OneTile);
+        var cut = Render<GameBoard>();
+        var root = cut.Find(".game");
+        var expected = 0;
+        foreach (var key in Burst)
+        {
+            if (twin.Move(Dir(key))) expected++;
+            root.KeyDown(new KeyboardEventArgs { Key = key });
+            Assert.Equal(Flat(twin), Tiles(cut));
+            Assert.Equal(expected.ToString(), cut.Find(".board").GetAttribute("data-moves"));
+            Assert.Equal(twin.Score.ToString(), Score(cut));
+        }
+
+        var saves = JSInterop.Invocations.Count(i => i.Identifier == "localStorage.setItem" && (string?)i.Arguments[0] == "blazor2048.best.4x4");
+        Assert.True(saves >= 2, $"Only {saves} best-score saves were started, so none overlapped.");
+        Assert.True(expected >= 8);
     }
 
     [Fact]
