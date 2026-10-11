@@ -10,7 +10,7 @@ and a base class on Playwright's `BrowserTest`.
 
 ## Technical Context
 
-**Primary Dependencies**: xunit.v3 4.0.1 (Apache-2.0), xunit.runner.visualstudio 4.0.0 (Apache-2.0), Microsoft.NET.Test.Sdk 18.10.1 (MIT), bunit 2.11.3 (MIT), Microsoft.Playwright.Xunit.v3 1.63.0 (MIT)
+**Primary Dependencies**: xunit.v3 4.0.2 (Apache-2.0), xunit.runner.visualstudio 4.0.1 (Apache-2.0), Microsoft.NET.Test.Sdk 18.10.1 (MIT), bunit 2.11.3 (MIT), Microsoft.Playwright.Xunit.v3 1.63.0 (MIT)
 
 ## Constitution Check
 

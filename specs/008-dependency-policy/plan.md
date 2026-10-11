@@ -12,7 +12,7 @@ each. `deploy.yml` runs build and E2E for PRs but its deploy job has `if: github
 | Package / Action | Version | License |
 |---|---|---|
 | Microsoft.AspNetCore.Components.WebAssembly (+ DevServer) | 10.0.12 | MIT |
-| xunit.v3 / xunit.runner.visualstudio | 4.0.1 / 4.0.0 | Apache-2.0 |
+| xunit.v3 / xunit.runner.visualstudio | 4.0.2 / 4.0.1 | Apache-2.0 |
 | Microsoft.NET.Test.Sdk | 18.10.1 | MIT |
 | bunit | 2.11.3 | MIT |
 | Microsoft.Playwright (+ .Xunit.v3) | 1.63.0 | MIT |
