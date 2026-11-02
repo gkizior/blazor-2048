@@ -28,7 +28,7 @@ jobs:
 
       - uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.x # latest .NET 10 SDK; global.json requires >= 10.0.401 (Dependabot bumps it)
+          dotnet-version: 10.0.x # latest .NET 10 SDK; global.json requires >= 10.0.403 (Dependabot bumps it)
 
       # Only needed when a Mermaid diagram changed without its SVGs being committed.
       - uses: actions/setup-node@v7
@@ -80,7 +80,7 @@ jobs:
 
       - uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.x # latest .NET 10 SDK; global.json requires >= 10.0.401 (Dependabot bumps it)
+          dotnet-version: 10.0.x # latest .NET 10 SDK; global.json requires >= 10.0.403 (Dependabot bumps it)
 
       - uses: actions/download-artifact@v8
         with:
