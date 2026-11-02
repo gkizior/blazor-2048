@@ -9,18 +9,20 @@ each. `deploy.yml` runs build and E2E for PRs but its deploy job has `if: github
 
 ## Technical Context
 
+Current versions (last updated 2026-11-02):
+
 | Package / Action | Version | License |
 |---|---|---|
-| Microsoft.AspNetCore.Components.WebAssembly (+ DevServer) | 10.0.12 | MIT |
+| Microsoft.AspNetCore.Components.WebAssembly (+ DevServer) | 10.0.14 | MIT |
 | xunit.v3 / xunit.runner.visualstudio | 4.0.2 / 4.0.1 | Apache-2.0 |
-| Microsoft.NET.Test.Sdk | 18.10.1 | MIT |
-| bunit | 2.11.3 | MIT |
-| Microsoft.Playwright (+ .Xunit.v3) | 1.63.0 | MIT |
-| Markdig / YamlDotNet | 1.4.0 / 18.1.0 | BSD-2-Clause / MIT |
+| Microsoft.NET.Test.Sdk | 18.11.0 | MIT |
+| bunit | 2.13.3 | MIT |
+| Microsoft.Playwright (+ .Xunit.v3) | 1.64.1 | MIT |
+| Markdig / YamlDotNet | 1.5.1 / 18.1.0 | BSD-2-Clause / MIT |
 | actions/checkout, setup-dotnet, setup-node | v7, v6, v7 | MIT |
 | upload-artifact, download-artifact | v7, v8 | MIT |
 | configure-pages, upload-pages-artifact, deploy-pages | v6, v5, v5 | MIT |
-| .NET SDK (`global.json`) | 10.0.401 | MIT |
+| .NET SDK (`global.json`) | 10.0.403 | MIT |
 
 Held back: none.
 
