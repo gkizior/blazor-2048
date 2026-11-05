@@ -17,7 +17,7 @@ flowchart LR
     MMD[mermaid blocks] -. render-diagrams<br/>mermaid-cli, only when new .-> SVG
 ```
 
-1. `Blazor2048.csproj` builds `tools/DocsBuilder` (a project reference with
+1. `src/Blazor2048/build/Docs.targets` (imported by `Blazor2048.csproj`) builds `tools/DocsBuilder` (a project reference with
    `ReferenceOutputAssembly="false"`) and runs `DocsBuilder build` before the app build.
    It is incremental: it only runs when a `.md` file, `toc.yml`, a diagram, or the tool changes.
 2. DocsBuilder finds **every `.md` file in the repo** (skipping `bin`, `obj`, `node_modules`, ...),

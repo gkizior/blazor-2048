@@ -9,8 +9,8 @@
 locked versions of mermaid-cli and mermaid into its settings fingerprint, so any version change
 re-renders every diagram. When it has work to do it runs `npm ci` in `tools/mermaid` (once) and
 calls `node_modules/.bin/mmdc` instead of `npx --yes -p …`. Dependabot gets an `npm` entry for
-`/tools/mermaid`. Actions are pinned to commit SHAs (`uses: owner/action@<sha> # vX.Y.Z`), which
-Dependabot keeps updated, comment included.
+`/tools/mermaid`. Actions were pinned to commit SHAs (`uses: owner/action@<sha> # vX.Y.Z`); spec 014 reverted
+that to plain major-version tags at Garrett's request.
 
 | Item | Before | After | License |
 |---|---|---|---|
@@ -18,7 +18,7 @@ Dependabot keeps updated, comment included.
 | @mermaid-js/mermaid-cli | 12.0.0 | 12.2.0 | MIT |
 | puppeteer | 25.12.0 | 25.16.0 | Apache-2.0 |
 | mermaid (locked, transitive) | 12.3.0 (floating) | 12.3.0 | MIT |
-| Actions | major tags | commit SHAs of latest releases | MIT |
+| Actions | major tags | commit SHAs of latest releases (reverted to major tags in spec 014) | MIT |
 
 License review: no license changed and no new transitive packages. Existing non-MIT build-time-only
 transitives (fonts OFL-1.1, Font Awesome CC-BY-4.0/OFL-1.1/MIT, dompurify MPL-2.0 OR Apache-2.0,

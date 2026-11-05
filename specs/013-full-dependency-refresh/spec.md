@@ -36,7 +36,7 @@ commit SHA; update specs and docs. .NET stays on 10 (LTS, SDK 10.0.403 is the la
 
 **Acceptance Scenarios**:
 
-1. **Given** `.github/workflows/deploy.yml`, **When** it is read, **Then** every `uses:` is a 40-character commit SHA with a `# vX.Y.Z` comment.
+1. **Given** `.github/workflows/deploy.yml`, **When** it is read, **Then** every `uses:` is a 40-character commit SHA with a `# vX.Y.Z` comment. *(Superseded by spec 014: Garrett prefers plain major-version tags.)*
 
 ## Requirements
 
@@ -45,7 +45,7 @@ commit SHA; update specs and docs. .NET stays on 10 (LTS, SDK 10.0.403 is the la
 - **FR-001**: Markdig MUST be 1.6.0; mermaid-cli 12.2.0 and puppeteer 25.16.0 MUST be pinned exactly in `tools/mermaid/package.json` with a committed lockfile.
 - **FR-002**: DocsBuilder MUST read the versions from the package/lock files (no hardcoded versions) and render with the locally installed `mmdc` (`npm ci`).
 - **FR-003**: `.github/dependabot.yml` MUST add the `npm` ecosystem (directory `/tools/mermaid`) on the same weekly schedule with a minor/patch group.
-- **FR-004**: Every GitHub Action MUST be pinned to the full commit SHA of its latest release.
+- **FR-004**: Every GitHub Action MUST be pinned to the full commit SHA of its latest release. *(Reversed by spec 014: Actions use plain major-version tags.)*
 - **FR-005**: Specs 006 and 008, the constitution, README and docs MUST describe the new tracking.
 
 ## Success Criteria

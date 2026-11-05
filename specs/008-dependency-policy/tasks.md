@@ -7,4 +7,5 @@
 - [x] T003 Every NuGet package on the latest stable; licenses checked (none held back) — [`bc0de4d`](https://github.com/gkizior/blazor-2048/commit/bc0de4d), [`4b55f38`](https://github.com/gkizior/blazor-2048/commit/4b55f38), [`28134ea`](https://github.com/gkizior/blazor-2048/commit/28134ea)
 - [x] T004 Confirm PRs run tests and never deploy (`deploy` job skipped for `pull_request`) — [`75882e5`](https://github.com/gkizior/blazor-2048/commit/75882e5)
 - [x] T005 First Dependabot run after setup: no PRs needed (everything current)
-- [x] T006 Spec 013: npm ecosystem for `tools/mermaid`, Actions pinned to commit SHAs, Markdig 1.6.0, mermaid-cli 12.2.0, puppeteer 25.16.0
+- [x] T006 Spec 013: npm ecosystem for `tools/mermaid`, Actions pinned to commit SHAs (reverted to major tags in spec 014), Markdig 1.6.0, mermaid-cli 12.2.0, puppeteer 25.16.0
+- [x] T007 Spec 014: Actions back on plain major-version tags (Garrett's preference)

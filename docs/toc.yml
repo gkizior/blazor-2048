@@ -127,3 +127,10 @@
           href: ../specs/013-full-dependency-refresh/plan.md
         - name: Tasks
           href: ../specs/013-full-dependency-refresh/tasks.md
+    - name: 014 Action tags and clean csproj
+      href: ../specs/014-action-tags-and-clean-csproj/spec.md
+      items:
+        - name: Plan
+          href: ../specs/014-action-tags-and-clean-csproj/plan.md
+        - name: Tasks
+          href: ../specs/014-action-tags-and-clean-csproj/tasks.md

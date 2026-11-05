@@ -5,7 +5,7 @@ namespace Blazor2048.Services;
 
 /// <summary>
 /// Build details shown in the footer. Commit, build date and repository URL are stamped into the
-/// assembly as [AssemblyMetadata] by MSBuild (see Blazor2048.csproj: GITHUB_SHA in CI, git locally).
+/// assembly as [AssemblyMetadata] by MSBuild (see src/Blazor2048/build/BuildInfo.targets: GITHUB_SHA in CI, git locally).
 /// </summary>
 public sealed record BuildInfo(
     string Author,

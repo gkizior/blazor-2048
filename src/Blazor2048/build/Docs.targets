@@ -1,0 +1,33 @@
+<Project>
+  <!-- Repo Markdown -> wwwroot/docs-content (HTML, index.json, diagram SVGs) via tools/DocsBuilder. -->
+  <PropertyGroup>
+    <RepoRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '..', '..'))</RepoRoot>
+    <DocsOutputDir>$(MSBuildProjectDirectory)/wwwroot/docs-content/</DocsOutputDir>
+    <DocsBuilderDll>$(RepoRoot)tools/DocsBuilder/bin/$(Configuration)/$(TargetFramework)/DocsBuilder.dll</DocsBuilderDll>
+    <!-- DocsBuilder is referenced only for build order, never shipped. -->
+    <ValidateExecutableReferencesMatchSelfContained>false</ValidateExecutableReferencesMatchSelfContained>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(RepoRoot)tools/DocsBuilder/DocsBuilder.csproj" ReferenceOutputAssembly="false" Private="false" />
+    <DocsInput Include="$(RepoRoot)**/*.md;$(RepoRoot)docs/toc.yml;$(RepoRoot)docs/diagrams/*.svg;$(RepoRoot)docs/images/**"
+               Exclude="$(RepoRoot)**/bin/**;$(RepoRoot)**/obj/**;$(RepoRoot)**/node_modules/**;$(RepoRoot).git/**;$(RepoRoot)artifacts/**;$(RepoRoot)publish/**;$(RepoRoot)**/TestResults/**" />
+  </ItemGroup>
+
+  <Target Name="BuildDocs" BeforeTargets="ResolveProjectStaticWebAssets" DependsOnTargets="ResolveProjectReferences"
+          Inputs="@(DocsInput);$(DocsBuilderDll)" Outputs="$(DocsOutputDir)index.json" Condition="'$(NoBuild)' != 'true'">
+    <PropertyGroup>
+      <_DotNetHost>$(DOTNET_HOST_PATH)</_DotNetHost>
+      <_DotNetHost Condition="'$(_DotNetHost)' == ''">dotnet</_DotNetHost>
+    </PropertyGroup>
+    <Exec Command="&quot;$(_DotNetHost)&quot; &quot;$(DocsBuilderDll)&quot; build --repo &quot;$(RepoRoot.TrimEnd('/\'))&quot; --out &quot;$(DocsOutputDir.TrimEnd('/\'))&quot; --repo-url &quot;$(RepositoryUrl)&quot;" />
+  </Target>
+
+  <!-- Generated files weren't there when wwwroot was globbed, so (re)add them. -->
+  <Target Name="IncludeDocsContent" AfterTargets="BuildDocs" BeforeTargets="ResolveProjectStaticWebAssets">
+    <ItemGroup>
+      <Content Remove="wwwroot\docs-content\**" />
+      <Content Include="wwwroot\docs-content\**" CopyToPublishDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Target>
+</Project>

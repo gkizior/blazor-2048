@@ -4,7 +4,7 @@
 
 ## Summary
 
-An MSBuild target (`AddBuildInfo` in `Blazor2048.csproj`) emits `AssemblyMetadata` for
+An MSBuild target (`AddBuildInfo`, now in `src/Blazor2048/build/BuildInfo.targets` since spec 014) emits `AssemblyMetadata` for
 `BuildCommit`, `BuildDate` and `RepositoryUrl`. `BuildInfo.FromAssembly` reads them plus the
 informational version and `RuntimeInformation.FrameworkDescription`; `AppFooter` renders them.
 
@@ -29,7 +29,8 @@ informational version and `RuntimeInformation.FrameworkDescription`; `AppFooter`
 ## Project Structure
 
 ```text
-src/Blazor2048/Blazor2048.csproj         AddBuildInfo target, Version
+src/Blazor2048/Blazor2048.csproj         Version
+src/Blazor2048/build/BuildInfo.targets   AddBuildInfo target
 src/Blazor2048/Services/BuildInfo.cs
 src/Blazor2048/Components/AppFooter.razor
 tests/Blazor2048.ComponentTests/FooterTests.cs

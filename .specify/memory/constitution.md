@@ -42,7 +42,7 @@ feature band). Moving to a new major version is a constitution amendment.
 - Only free-to-use licenses (MIT, Apache-2.0, BSD, MS-PL and similar). Commercial or paid
   licenses (for example FluentAssertions 8+) are not allowed; such packages stay on their last
   free version or are replaced.
-- GitHub Actions are pinned to full commit SHAs with a `# vX.Y.Z` comment.
+- GitHub Actions use plain major-version tags (`@v7`), not commit SHAs (Garrett's preference, spec 014).
 - Dependabot checks `nuget`, `github-actions`, `dotnet-sdk` and `npm` weekly on **Monday at 08:00
   America/Chicago**, grouping minor and patch updates per ecosystem. Updates are merged after CI
   passes (a follow-up check runs at 08:57 Monday Central). Pull requests run CI but never deploy.
