@@ -1,0 +1,23 @@
+<Project>
+  <!-- Footer build info as [AssemblyMetadata]: BuildCommit (GITHUB_SHA, else git, else "unknown") and
+       BuildDate (UTC time in CI; the UTC date locally so builds stay incremental).
+       RepositoryUrl metadata is added by the SDK from $(RepositoryUrl). -->
+  <Target Name="AddBuildInfo" BeforeTargets="GetAssemblyAttributes;CoreGenerateAssemblyInfo">
+    <Exec Command="git rev-parse HEAD" Condition="'$(GITHUB_SHA)' == ''" WorkingDirectory="$(MSBuildProjectDirectory)"
+          ConsoleToMSBuild="true" IgnoreExitCode="true" EchoOff="true" StandardOutputImportance="low" StandardErrorImportance="low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_GitCommit" />
+      <Output TaskParameter="ExitCode" PropertyName="_GitExitCode" />
+    </Exec>
+    <PropertyGroup>
+      <BuildCommit Condition="'$(BuildCommit)' == ''">$(GITHUB_SHA)</BuildCommit>
+      <BuildCommit Condition="'$(BuildCommit)' == '' and '$(_GitExitCode)' == '0'">$(_GitCommit.Trim())</BuildCommit>
+      <BuildCommit Condition="'$(BuildCommit)' == ''">unknown</BuildCommit>
+      <BuildDate Condition="'$(BuildDate)' == '' and '$(GITHUB_ACTIONS)' == 'true'">$([System.DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"))</BuildDate>
+      <BuildDate Condition="'$(BuildDate)' == ''">$([System.DateTime]::UtcNow.ToString("yyyy-MM-dd"))</BuildDate>
+    </PropertyGroup>
+    <ItemGroup>
+      <AssemblyMetadata Include="BuildCommit" Value="$(BuildCommit)" />
+      <AssemblyMetadata Include="BuildDate" Value="$(BuildDate)" />
+    </ItemGroup>
+  </Target>
+</Project>
