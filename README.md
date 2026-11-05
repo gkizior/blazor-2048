@@ -96,5 +96,5 @@ Every push to `main` runs the GitHub Actions workflow. It builds the app, runs t
 publishes the site, runs the Playwright E2E tests against those exact files, and deploys them with
 `actions/deploy-pages`. Deployment only happens if all of the tests pass. Pull requests (including
 Dependabot's weekly NuGet, npm, Actions and .NET SDK updates) run the same tests without deploying.
-Every Action is pinned to a commit SHA.
+Actions use plain major-version tags (for example `actions/checkout@v7`).
 See [Build and deploy](docs/build-and-deploy.md).

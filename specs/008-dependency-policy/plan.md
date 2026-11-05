@@ -20,9 +20,9 @@ Current versions (last updated 2026-11-05):
 | Microsoft.Playwright (+ .Xunit.v3) | 1.64.1 | MIT |
 | Markdig / YamlDotNet | 1.6.0 / 18.1.0 | BSD-2-Clause / MIT |
 | @mermaid-js/mermaid-cli / mermaid (locked) / puppeteer (npm, `tools/mermaid`) | 12.2.0 / 12.3.0 / 25.16.0 | MIT / MIT / Apache-2.0 |
-| actions/checkout, setup-dotnet, setup-node | v7.0.1, v6.1.0, v7.1.0 (SHA-pinned) | MIT |
-| upload-artifact, download-artifact | v7.0.2, v8.0.2 (SHA-pinned) | MIT |
-| configure-pages, upload-pages-artifact, deploy-pages | v6.0.0, v5.0.0, v5.0.1 (SHA-pinned) | MIT |
+| actions/checkout, setup-dotnet, setup-node | v7.0.1, v6.1.0, v7.1.0 | MIT |
+| upload-artifact, download-artifact | v7.0.2, v8.0.2 | MIT |
+| configure-pages, upload-pages-artifact, deploy-pages | v6.0.0, v5.0.0, v5.0.1 | MIT |
 | Node (CI) | 24 | MIT |
 | .NET SDK (`global.json`) | 10.0.403 | MIT |
 

@@ -68,7 +68,7 @@ offline. A new deploy changes the manifest version, and the worker swaps caches 
 
 ## Build info in the footer
 
-`Blazor2048.csproj` stamps build details into the assembly as `[AssemblyMetadata]`:
+`src/Blazor2048/build/BuildInfo.targets` (imported by `Blazor2048.csproj`) stamps build details into the assembly as `[AssemblyMetadata]`:
 
 | Key | Source |
 |---|---|
@@ -84,8 +84,16 @@ offline. A new deploy changes the manifest version, and the worker swaps caches 
 `.github/dependabot.yml` checks NuGet packages, GitHub Actions, the .NET SDK and the npm
 diagram tooling in `tools/mermaid` (mermaid-cli, puppeteer) weekly
 (Mondays 08:00 America/Chicago) and groups minor and patch updates into one PR per ecosystem.
-Each PR runs the full test pipeline without deploying. Every Action is pinned to a full commit
-SHA with a `# vX.Y.Z` comment; Dependabot updates both.
+Each PR runs the full test pipeline without deploying. Actions use plain major-version tags
+(`actions/checkout@v7`); Dependabot bumps them when a new major ships.
+
+## Project files
+
+- `Directory.Build.props` (repo root): `net10.0`, nullable, implicit usings, not packable, for every project.
+- `tests/Directory.Build.props`: xUnit v3 test projects are executables with a global `using Xunit`.
+- `src/Blazor2048/Blazor2048.csproj`: version, packages and references only; it imports
+  `build/Docs.targets` (docs build) and `build/BuildInfo.targets` (footer build info).
+- Package versions stay in each `.csproj` so Dependabot can update them.
 
 ## Local commands
 
