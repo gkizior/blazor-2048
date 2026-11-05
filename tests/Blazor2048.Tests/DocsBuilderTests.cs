@@ -176,6 +176,32 @@ public sealed class DocsBuilderTests : IDisposable
 public class MermaidSvgTests
 {
     [Fact]
+    public void Tool_Versions_Come_From_The_Committed_Lockfile_And_Match_The_Exact_Pins()
+    {
+        var dir = Path.Combine(RepoPaths.Root, "tools", "mermaid");
+        using var pkg = System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.Combine(dir, "package.json")));
+        var deps = pkg.RootElement.GetProperty("devDependencies");
+        var cli = deps.GetProperty("@mermaid-js/mermaid-cli").GetString();
+        var puppeteer = deps.GetProperty("puppeteer").GetString();
+        Assert.Matches(@"^\d+\.\d+\.\d+$", cli); // exact pins, no ranges
+        Assert.Matches(@"^\d+\.\d+\.\d+$", puppeteer);
+
+        var locked = ToolVersions.Read(Path.Combine(dir, "package-lock.json"));
+        Assert.Equal(cli, locked.MermaidCli);
+        Assert.Equal(puppeteer, locked.Puppeteer);
+        Assert.Equal(locked, MermaidRenderer.Versions);
+        Assert.Contains($"mmdc {locked.MermaidCli}\nmermaid {locked.Mermaid}\n", MermaidRenderer.SettingsFingerprint);
+    }
+
+    [Fact]
+    public void ToolVersions_Parses_An_Npm_Lockfile()
+    {
+        var json = """{"packages":{"":{},"node_modules/@mermaid-js/mermaid-cli":{"version":"1.2.3"},"node_modules/mermaid":{"version":"4.5.6"},"node_modules/puppeteer":{"version":"7.8.9"}}}""";
+        Assert.Equal(new ToolVersions("1.2.3", "4.5.6", "7.8.9"), ToolVersions.Parse(json));
+        Assert.Throws<InvalidOperationException>(() => ToolVersions.Parse("""{"packages":{}}"""));
+    }
+
+    [Fact]
     public void WithIntrinsicSize_Replaces_Percent_Width_With_The_ViewBox_Size()
     {
         var svg = "<svg id=\"x\" width=\"100%\" style=\"max-width: 488.5px;\" viewBox=\"4 4 488.5 1554.5\"><g/></svg>";

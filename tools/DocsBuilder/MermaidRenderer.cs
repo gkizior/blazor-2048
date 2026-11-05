@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace DocsBuilder;
@@ -30,8 +31,16 @@ public sealed partial record MermaidDiagram(string Source)
 /// </summary>
 public sealed class MermaidRenderer(string diagramDir)
 {
-    public const string MermaidCliVersion = "12.0.0";
-    public const string PuppeteerVersion = "25.12.0";
+    /// <summary>
+    /// tools/mermaid holds package.json + package-lock.json, which pin mermaid-cli, puppeteer and
+    /// everything below them (Dependabot's npm ecosystem keeps them current). No versions live in C#.
+    /// </summary>
+    public static string ToolDir { get; } = FindToolDir();
+
+    /// <summary>Locked versions from tools/mermaid/package-lock.json.</summary>
+    public static ToolVersions Versions { get; } = ToolVersions.Read(Path.Combine(ToolDir, "package-lock.json"));
+
+    public static string MermaidCliVersion => Versions.MermaidCli;
 
     // Same font metrics on every OS (Arial / Liberation Sans / Helvetica), so labels never clip.
     private const string Font = "Arial, Helvetica, \\\"Liberation Sans\\\", sans-serif";
@@ -70,7 +79,7 @@ public sealed class MermaidRenderer(string diagramDir)
     };
 
     /// <summary>Changing the renderer or its settings changes every hash, so all diagrams re-render.</summary>
-    public static string SettingsFingerprint => $"mmdc {MermaidCliVersion}\n{Configs["light"]}\n{Configs["dark"]}";
+    public static string SettingsFingerprint => $"mmdc {Versions.MermaidCli}\nmermaid {Versions.Mermaid}\n{Configs["light"]}\n{Configs["dark"]}";
 
     public async Task<bool> RenderMissingAsync(IEnumerable<MermaidDiagram> diagrams)
     {
@@ -97,6 +106,7 @@ public sealed class MermaidRenderer(string diagramDir)
                 : $$"""{"executablePath":"{{chrome.Replace("\\", "\\\\")}}","args":["--no-sandbox"]}""");
 
             var ok = true;
+            var installed = false;
             foreach (var diagram in list)
             foreach (var (theme, config) in Configs)
             {
@@ -108,10 +118,21 @@ public sealed class MermaidRenderer(string diagramDir)
                 await File.WriteAllTextAsync(input, diagram.Normalized);
                 await File.WriteAllTextAsync(configFile, config);
 
+                if (!installed)
+                {
+                    // Exact versions from the committed lockfile.
+                    if (await RunAsync(OperatingSystem.IsWindows() ? "npm.cmd" : "npm", ["ci", "--no-audit", "--no-fund"], chrome is not null, ToolDir) != 0)
+                    {
+                        Console.Error.WriteLine($"error DOCS003: npm ci failed in {ToolDir}. Is Node.js 22.13+ installed?");
+                        return false;
+                    }
+                    installed = true;
+                }
+
                 Console.WriteLine($"Rendering {diagram.FileName(theme)} ({diagram.Title ?? "untitled"})");
-                var exit = await RunAsync("npx", [
-                    "--yes", "-p", $"@mermaid-js/mermaid-cli@{MermaidCliVersion}", "-p", $"puppeteer@{PuppeteerVersion}",
-                    "mmdc", "-i", input, "-o", output, "-c", configFile, "-p", puppeteerConfig,
+                var mmdc = Path.Combine(ToolDir, "node_modules", ".bin", OperatingSystem.IsWindows() ? "mmdc.cmd" : "mmdc");
+                var exit = await RunAsync(mmdc, [
+                    "-i", input, "-o", output, "-c", configFile, "-p", puppeteerConfig,
                     "-b", "transparent", "--no-font-embed", "-I", $"d{diagram.Hash}-{theme}", "-q",
                 ], chrome is not null);
                 if (exit != 0 || !File.Exists(output))
@@ -162,13 +183,40 @@ public sealed class MermaidRenderer(string diagramDir)
         return null; // let puppeteer download its own browser
     }
 
-    private static async Task<int> RunAsync(string file, string[] args, bool skipBrowserDownload)
+    private static string FindToolDir()
     {
-        var psi = new ProcessStartInfo(OperatingSystem.IsWindows() ? "npx.cmd" : file) { UseShellExecute = false };
+        for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null; dir = dir.Parent)
+        {
+            var candidate = Path.Combine(dir.FullName, "tools", "mermaid");
+            if (File.Exists(Path.Combine(candidate, "package-lock.json"))) return candidate;
+        }
+        throw new InvalidOperationException("tools/mermaid/package-lock.json not found above " + AppContext.BaseDirectory);
+    }
+
+    private static async Task<int> RunAsync(string file, string[] args, bool skipBrowserDownload, string? workingDirectory = null)
+    {
+        var psi = new ProcessStartInfo(file) { UseShellExecute = false, WorkingDirectory = workingDirectory ?? "" };
         foreach (var a in args) psi.ArgumentList.Add(a);
         if (skipBrowserDownload) psi.Environment["PUPPETEER_SKIP_DOWNLOAD"] = "1";
-        using var process = Process.Start(psi) ?? throw new InvalidOperationException("Could not start npx. Is Node.js installed?");
+        using var process = Process.Start(psi) ?? throw new InvalidOperationException($"Could not start {file}. Is Node.js installed?");
         await process.WaitForExitAsync();
         return process.ExitCode;
+    }
+}
+
+/// <summary>The versions that matter for rendering, read from an npm lockfile (v2/v3 "packages" map).</summary>
+public sealed record ToolVersions(string MermaidCli, string Mermaid, string Puppeteer)
+{
+    public static ToolVersions Read(string lockFile) => Parse(File.ReadAllText(lockFile));
+
+    public static ToolVersions Parse(string lockJson)
+    {
+        using var doc = JsonDocument.Parse(lockJson);
+        var packages = doc.RootElement.GetProperty("packages");
+        string Version(string name) =>
+            packages.TryGetProperty("node_modules/" + name, out var p) && p.TryGetProperty("version", out var v)
+                ? v.GetString()!
+                : throw new InvalidOperationException($"{name} is not in the mermaid lockfile");
+        return new(Version("@mermaid-js/mermaid-cli"), Version("mermaid"), Version("puppeteer"));
     }
 }
