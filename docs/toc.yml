@@ -120,3 +120,10 @@
           href: ../specs/012-purple-app-icons/plan.md
         - name: Tasks
           href: ../specs/012-purple-app-icons/tasks.md
+    - name: 013 Full dependency refresh
+      href: ../specs/013-full-dependency-refresh/spec.md
+      items:
+        - name: Plan
+          href: ../specs/013-full-dependency-refresh/plan.md
+        - name: Tasks
+          href: ../specs/013-full-dependency-refresh/tasks.md
