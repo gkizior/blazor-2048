@@ -37,12 +37,13 @@ feature band). Moving to a new major version is a constitution amendment.
 
 ### IV. Latest stable, freely licensed dependencies
 
-- Every NuGet package, GitHub Action and the .NET SDK is on its highest **stable** version.
+- Every NuGet package, npm package (`tools/mermaid`), GitHub Action and the .NET SDK is on its highest **stable** version.
   Prereleases are never used.
 - Only free-to-use licenses (MIT, Apache-2.0, BSD, MS-PL and similar). Commercial or paid
   licenses (for example FluentAssertions 8+) are not allowed; such packages stay on their last
   free version or are replaced.
-- Dependabot checks `nuget`, `github-actions` and `dotnet-sdk` weekly on **Monday at 08:00
+- GitHub Actions are pinned to full commit SHAs with a `# vX.Y.Z` comment.
+- Dependabot checks `nuget`, `github-actions`, `dotnet-sdk` and `npm` weekly on **Monday at 08:00
   America/Chicago**, grouping minor and patch updates per ecosystem. Updates are merged after CI
   passes (a follow-up check runs at 08:57 Monday Central). Pull requests run CI but never deploy.
 

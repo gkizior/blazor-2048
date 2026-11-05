@@ -39,6 +39,7 @@ Play it on your iPhone straight from Safari — no Mac, no App Store, no fees.
 | `src/Game2048.Core` | Pure C# game logic for N×N boards (`Game.cs`, `BoardSize.cs`): sliding, merging, spawning, win/lose, tile ids for animations, allocation-free moves |
 | `src/Blazor2048` | Blazor WebAssembly PWA: game board, theming, docs viewer, footer |
 | `tools/DocsBuilder` | Build-time tool: Markdown → HTML (Markdig), Mermaid → SVG (mermaid-cli) |
+| `tools/mermaid` | Pinned npm tooling (mermaid-cli, puppeteer) for diagram rendering; tracked by Dependabot |
 | `tools/PerfTrace` | Developer tool: Chromium traces, per-frame tile sampling and memory sampling, at any board size |
 | `specs/`, `.specify/` | Feature specs (spec, plan, tasks) and the project constitution, in the Spec Kit layout |
 | `docs/` | Project docs shown in the app ([architecture](docs/architecture.md), [engine](docs/game-engine.md), [testing](docs/testing.md), ...) |
@@ -94,5 +95,6 @@ It now opens full-screen from its own icon, like an app, and works offline.
 Every push to `main` runs the GitHub Actions workflow. It builds the app, runs the xUnit and bUnit tests,
 publishes the site, runs the Playwright E2E tests against those exact files, and deploys them with
 `actions/deploy-pages`. Deployment only happens if all of the tests pass. Pull requests (including
-Dependabot's weekly updates) run the same tests without deploying.
+Dependabot's weekly NuGet, npm, Actions and .NET SDK updates) run the same tests without deploying.
+Every Action is pinned to a commit SHA.
 See [Build and deploy](docs/build-and-deploy.md).

@@ -17,7 +17,7 @@
 
 **Acceptance Scenarios**:
 
-1. **Given** Monday 08:00 America/Chicago, **When** Dependabot runs, **Then** it checks `nuget`, `github-actions` and `dotnet-sdk` and opens at most one grouped minor/patch PR per ecosystem.
+1. **Given** Monday 08:00 America/Chicago, **When** Dependabot runs, **Then** it checks `nuget`, `github-actions`, `dotnet-sdk` and `npm` (`tools/mermaid`, added in spec 013) and opens at most one grouped minor/patch PR per ecosystem.
 2. **Given** a Dependabot PR, **When** CI runs, **Then** every suite runs and nothing deploys.
 3. **Given** CI passed, **When** the 08:57 follow-up check runs, **Then** the PR can be merged and deployed from `main`.
 
@@ -32,7 +32,7 @@
 
 ### Functional Requirements
 
-- **FR-001**: `.github/dependabot.yml` MUST cover `nuget` (directory `/`, all projects), `github-actions` and `dotnet-sdk`.
+- **FR-001**: `.github/dependabot.yml` MUST cover `nuget` (directory `/`, all projects), `github-actions`, `dotnet-sdk` and `npm` (directory `/tools/mermaid`, since spec 013).
 - **FR-002**: Every ecosystem MUST run weekly, Monday, 08:00, America/Chicago.
 - **FR-003**: Minor and patch updates MUST be grouped per ecosystem.
 - **FR-004**: The workflow MUST run tests on `pull_request` and MUST NOT deploy from PRs.

@@ -59,8 +59,9 @@ dotnet run --project tools/DocsBuilder -- render-diagrams --repo .
 - Each diagram's file name is a hash of its source plus the renderer settings, e.g.
   `docs/diagrams/1a2b3c4d5e6f-light.svg` and `-dark.svg`. Unchanged diagrams are never re-rendered,
   and SVGs no doc uses any more are deleted.
-- Rendering uses the official [mermaid-cli](https://github.com/mermaid-js/mermaid-cli) through `npx`
-  (pinned version, Node 22+), with palettes that match the app's light and dark themes, a
+- Rendering uses the official [mermaid-cli](https://github.com/mermaid-js/mermaid-cli) from `tools/mermaid`
+  (exact versions in its `package.json` and committed `package-lock.json`, installed with `npm ci`,
+  tracked by Dependabot; Node 22.13+), with palettes that match the app's light and dark themes, a
   cross-platform font stack, and no embedded fonts (SVGs stay around 10-20 KB).
 - The SVGs are committed, so a normal `dotnet build` never needs Node.
 - CI runs the same command before building, so a diagram edited without re-rendering still ships
