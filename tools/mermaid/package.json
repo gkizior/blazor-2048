@@ -1,0 +1,11 @@
+{
+  "name": "blazor-2048-mermaid",
+  "private": true,
+  "description": "Build-time only: mermaid-cli for tools/DocsBuilder render-diagrams. Versions are tracked by Dependabot (npm).",
+  "license": "UNLICENSED",
+  "engines": { "node": ">=22.13.0" },
+  "devDependencies": {
+    "@mermaid-js/mermaid-cli": "12.2.0",
+    "puppeteer": "25.16.0"
+  }
+}

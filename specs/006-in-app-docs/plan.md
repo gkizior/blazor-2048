@@ -11,7 +11,7 @@ mermaid-cli into committed SVGs named by content hash.
 
 ## Technical Context
 
-- **Primary Dependencies**: Markdig 1.4.0 (BSD-2-Clause), YamlDotNet 18.1.0 (MIT); authoring only: @mermaid-js/mermaid-cli (MIT) via `npx`, Node 22+
+- **Primary Dependencies**: Markdig 1.6.0 (BSD-2-Clause), YamlDotNet 18.1.0 (MIT); authoring only: @mermaid-js/mermaid-cli 12.2.0 (MIT) and puppeteer 25.16.0 (Apache-2.0), pinned in `tools/mermaid/package.json` + `package-lock.json` and installed with `npm ci` (see spec 013), Node 22.13+ (CI uses Node 24)
 - **Testing**: `DocsBuilderTests` (xUnit), `DocsPageTests` (bUnit), docs E2E tests
 
 ## Constitution Check

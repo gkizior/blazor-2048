@@ -38,3 +38,15 @@ updates:
     groups:
       dotnet-sdk-minor-and-patch:
         update-types: ["minor", "patch"]
+
+  # mermaid-cli + puppeteer for DocsBuilder's diagram pre-rendering (build-time only).
+  - package-ecosystem: "npm"
+    directory: "/tools/mermaid"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "America/Chicago"
+    groups:
+      npm-minor-and-patch:
+        update-types: ["minor", "patch"]

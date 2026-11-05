@@ -5,7 +5,7 @@
 - **.NET 10 SDK** (`global.json`, roll forward to the latest feature band).
 - `global.json` also sets `"test": { "runner": "Microsoft.Testing.Platform" }`, which xUnit v3
   needs for `dotnet test` on the .NET 10 SDK.
-- **Node 22+** only if you change a Mermaid diagram (see [Docs system](docs-system.md)).
+- **Node 22.13+** (CI uses 24) only if you change a Mermaid diagram (see [Docs system](docs-system.md)).
 
 ## CI/CD pipeline
 
@@ -81,9 +81,11 @@ offline. A new deploy changes the manifest version, and the worker swaps caches 
 
 ## Dependency updates
 
-`.github/dependabot.yml` checks NuGet packages, GitHub Actions and the .NET SDK weekly
+`.github/dependabot.yml` checks NuGet packages, GitHub Actions, the .NET SDK and the npm
+diagram tooling in `tools/mermaid` (mermaid-cli, puppeteer) weekly
 (Mondays 08:00 America/Chicago) and groups minor and patch updates into one PR per ecosystem.
-Each PR runs the full test pipeline without deploying.
+Each PR runs the full test pipeline without deploying. Every Action is pinned to a full commit
+SHA with a `# vX.Y.Z` comment; Dependabot updates both.
 
 ## Local commands
 

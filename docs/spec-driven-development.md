@@ -66,6 +66,7 @@ three files, is misnamed, lacks the required sections, or is missing from the do
 | 010 | Spec-driven development | [spec](../specs/010-spec-driven-development/spec.md) | [plan](../specs/010-spec-driven-development/plan.md) | [tasks](../specs/010-spec-driven-development/tasks.md) |
 | 011 | Board sizes (4x4 to NxN) | [spec](../specs/011-board-sizes/spec.md) | [plan](../specs/011-board-sizes/plan.md) | [tasks](../specs/011-board-sizes/tasks.md) |
 | 012 | Purple app icons | [spec](../specs/012-purple-app-icons/spec.md) | [plan](../specs/012-purple-app-icons/plan.md) | [tasks](../specs/012-purple-app-icons/tasks.md) |
+| 013 | Full dependency refresh | [spec](../specs/013-full-dependency-refresh/spec.md) | [plan](../specs/013-full-dependency-refresh/plan.md) | [tasks](../specs/013-full-dependency-refresh/tasks.md) |
 
 Specs 001–009 were written after the features were built; 011 onward were written first, from the commit history and the requests
 as they were relayed. Where a request's exact wording was not kept, the spec says so.
