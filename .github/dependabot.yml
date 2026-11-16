@@ -6,6 +6,12 @@ updates:
   # All NuGet packages in the solution (app, tests, tools/DocsBuilder).
   - package-ecosystem: "nuget"
     directory: "/"
+    ignore:
+      # Project stays on .NET 10; hold Microsoft.* runtime packages at 10.x.
+      - dependency-name: "Microsoft.AspNetCore.*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "Microsoft.Extensions.*"
+        update-types: ["version-update:semver-major"]
     schedule:
       interval: "weekly"
       day: "monday"
@@ -30,6 +36,9 @@ updates:
   # The .NET SDK version in global.json.
   - package-ecosystem: "dotnet-sdk"
     directory: "/"
+    ignore:
+      - dependency-name: "dotnet-sdk"
+        update-types: ["version-update:semver-major"]
     schedule:
       interval: "weekly"
       day: "monday"
