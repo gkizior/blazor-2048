@@ -15,7 +15,7 @@ public class FooterTests : AppTestContext
 
         Assert.Contains("Garrett Kizior", text);
         Assert.Contains("v1.2.3", text);
-        Assert.Contains(".NET 10.0.0", text);
+        Assert.Contains(".NET 11.0.0", text);
         Assert.Contains("2026-10-08", text);
         Assert.Equal("2026-10-08T01:02:03Z", cut.Find("time").GetAttribute("datetime"));
     }
@@ -35,7 +35,7 @@ public class FooterTests : AppTestContext
     [Fact]
     public void Unknown_Commit_Is_Not_A_Link()
     {
-        var info = new BuildInfo("Garrett Kizior", "1.0.0", ".NET 10.0.0", "unknown", "unknown", "https://github.com/gkizior/blazor-2048");
+        var info = new BuildInfo("Garrett Kizior", "1.0.0", ".NET 11.0.0", "unknown", "unknown", "https://github.com/gkizior/blazor-2048");
         Assert.Null(info.CommitUrl);
         Assert.Equal("unknown", info.ShortCommit);
     }
@@ -48,7 +48,7 @@ public class FooterTests : AppTestContext
         Assert.Equal("Garrett Kizior", info.Author);
         Assert.Matches(@"^\d+\.\d+\.\d+", info.Version);
         Assert.DoesNotContain("+", info.Version);
-        Assert.StartsWith(".NET 10", info.Runtime);
+        Assert.StartsWith(".NET 11", info.Runtime);
         Assert.Matches("^([0-9a-f]{40}|unknown)$", info.Commit);
         Assert.Matches(@"^\d{4}-\d{2}-\d{2}", info.BuildDate);
         Assert.Equal("https://github.com/gkizior/blazor-2048", info.RepositoryUrl);

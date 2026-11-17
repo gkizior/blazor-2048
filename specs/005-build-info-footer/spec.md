@@ -26,7 +26,7 @@ the feature task, condensed:
 **Acceptance Scenarios**:
 
 1. **Given** a CI build of commit X, **When** the live site loads, **Then** the footer shows the first 7 characters of X linked to `https://github.com/gkizior/blazor-2048/commit/X`.
-2. **Given** any page (game or docs), **When** it loads, **Then** the footer shows "© year Garrett Kizior", the app version, ".NET 10.x" and the build date.
+2. **Given** any page (game or docs), **When** it loads, **Then** the footer shows "© year Garrett Kizior", the app version, ".NET 11.x" and the build date.
 3. **Given** either theme, **When** the footer renders, **Then** it is small, muted and readable.
 
 ### Edge Cases

@@ -20,7 +20,7 @@ attributes match apart from the removed duplicate.
 | Principle | Status | Notes |
 |---|---|---|
 | I. Blazor/C# first | ✅ | No code change. |
-| II. .NET 10 | ✅ | `net10.0` now set once. |
+| II. .NET 11 | ✅ | `TargetFramework` is set once in `Directory.Build.props` (`net11.0` as of [015](../015-dotnet-11/spec.md); it was `net10.0` when this plan shipped). |
 | III. Tested | ✅ | Full suite with E2E. |
 | IV. Dependencies | ✅ | Versions unchanged; Dependabot still edits the `.csproj` files. Constitution updated for tags. |
 | V. Pages deploy | ✅ | Same workflow, tags only. |

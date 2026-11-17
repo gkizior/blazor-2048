@@ -28,7 +28,7 @@ jobs:
 
       - uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.x # latest .NET 10 SDK; global.json requires >= 10.0.404 (Dependabot bumps it)
+          dotnet-version: 11.0.x # latest .NET 11 SDK; global.json requires >= 11.0.100 (Dependabot bumps it)
 
       # Only needed when a Mermaid diagram changed without its SVGs being committed
       # (DocsBuilder then runs `npm ci` in tools/mermaid, pinned by its package-lock.json).
@@ -81,7 +81,7 @@ jobs:
 
       - uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.x # latest .NET 10 SDK; global.json requires >= 10.0.404 (Dependabot bumps it)
+          dotnet-version: 11.0.x # latest .NET 11 SDK; global.json requires >= 11.0.100 (Dependabot bumps it)
 
       - uses: actions/download-artifact@v8
         with:
@@ -93,7 +93,7 @@ jobs:
 
       - name: Install Playwright Chromium
         shell: pwsh
-        run: tests/Blazor2048.E2ETests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
+        run: tests/Blazor2048.E2ETests/bin/Release/net11.0/playwright.ps1 install --with-deps chromium
 
       - name: Run E2E tests
         env:

@@ -13,7 +13,7 @@ the social image is an HTML page (`scripts/social-preview.html`) rendered by hea
 | Principle | Status | Notes |
 |---|---|---|
 | I. Blazor/C# first | ✅ | Static meta tags; the image is generated offline. |
-| II. .NET 10 | ✅ | Stale net9 references removed. |
+| II. .NET 11 | ✅ | Stale net9 references removed; current-state text updated to .NET 11 in [015](../015-dotnet-11/spec.md). |
 | III. Tested | ✅ | Docs build test covers README links and images. |
 | IV. Dependencies | ✅ | None. |
 | V. Pages deploy | ✅ | Image served from the Pages site. |

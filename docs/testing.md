@@ -113,7 +113,7 @@ opened with `OpenAsync` under 4x CPU throttling (Chromium):
 
 ```bash
 # once: install Chromium for Playwright
-pwsh tests/Blazor2048.E2ETests/bin/Debug/net10.0/playwright.ps1 install chromium
+pwsh tests/Blazor2048.E2ETests/bin/Debug/net11.0/playwright.ps1 install chromium
 RUN_E2E=1 dotnet test --project tests/Blazor2048.E2ETests
 ```
 

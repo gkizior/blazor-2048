@@ -9,7 +9,7 @@ everything that a library would do in the browser is done in C# at build time.
 
 ## Technical Context
 
-- **Language/Version**: C# / .NET 10
+- **Language/Version**: C# / .NET 11
 - **Primary Dependencies**: none added for this rule
 - **Testing**: code review plus the feature tests that prove CSS-only behaviour (theme, animations, docs)
 
@@ -18,7 +18,7 @@ everything that a library would do in the browser is done in C# at build time.
 | Principle | Status | Notes |
 |---|---|---|
 | I. Blazor/C# first | ✅ | This spec is the source of principle I. |
-| II. .NET 10 | ✅ |  |
+| II. .NET 11 | ✅ | Amended from .NET 10 in [015](../015-dotnet-11/spec.md). |
 | III. Tested | ✅ | Theme, animation and docs tests run without app JS. |
 | IV. Dependencies | ✅ | No JS packages. |
 | V. Pages deploy | ✅ |  |

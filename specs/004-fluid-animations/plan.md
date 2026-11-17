@@ -21,7 +21,7 @@ cut short by the next move.
 | Principle | Status | Notes |
 |---|---|---|
 | I. Blazor/C# first | ✅ | CSS + Razor only. PerfTrace injects test-only JS into the browser it drives; nothing ships. |
-| II. .NET 10 | ✅ |  |
+| II. .NET 11 | ✅ | Amended from .NET 10 in [015](../015-dotnet-11/spec.md). |
 | III. Tested | ✅ | Unit, bUnit and frame-sampling E2E tests; PerfTrace before/after evidence. |
 | IV. Dependencies | ✅ | No new runtime packages; AOT rejected. |
 | V. Pages deploy | ✅ |  |

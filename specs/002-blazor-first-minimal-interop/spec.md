@@ -6,6 +6,8 @@
 
 > Garrett's standing rules: Blazor/C# first with minimal JS interop (he considers heavy interop cheating, so no custom JS unless unavoidable), test with bUnit + Playwright for .NET (plus xUnit), target .NET 10, and deploy through the existing Pages workflow.
 
+The target in that standing rule was later amended to .NET 11 in [015](../015-dotnet-11/spec.md).
+
 Restated with the animation work:
 
 > Keep the earlier rules: Blazor first with no custom JS or JS libraries, respect reduced motion, and no dropped inputs.

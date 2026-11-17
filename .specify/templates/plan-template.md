@@ -13,7 +13,7 @@
 
 ## Technical Context
 
-- **Language/Version**: C# / .NET 10 (Blazor WebAssembly)
+- **Language/Version**: C# / .NET 11 (Blazor WebAssembly)
 - **Primary Dependencies**: [packages this feature adds or relies on, with licenses]
 - **Storage**: [localStorage via BrowserStorage / build-time files / N/A]
 - **Testing**: xUnit v3, bUnit, Playwright for .NET
@@ -28,13 +28,14 @@
 | Principle | Status | Notes |
 |---|---|---|
 | I. Blazor/C# first, minimal JS | ✅ / ⚠️ | [interop used, if any, and why it is unavoidable] |
-| II. .NET 10 | ✅ | |
+| II. .NET 11 | ✅ | |
 | III. Tested, green before deploy | ✅ | [which suites cover it] |
 | IV. Latest stable, free licenses | ✅ | [new packages and their licenses] |
 | V. Deploy through GitHub Pages | ✅ | |
 | VI. Accessible by default | ✅ | [contrast, reduced motion, keyboard/touch] |
 | VII. Documented, with diagrams | ✅ | [docs pages touched] |
 | VIII. Spec first | ✅ | |
+| IX. Snappy and lean at every scale | ✅ | |
 
 ## Design
 

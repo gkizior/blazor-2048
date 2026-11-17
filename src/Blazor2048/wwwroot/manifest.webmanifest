@@ -1,6 +1,6 @@
 {
   "name": "2048 (Blazor)",
-  "description": "The 2048 puzzle as a .NET 10 Blazor WebAssembly PWA",
+  "description": "The 2048 puzzle as a .NET 11 Blazor WebAssembly PWA",
   "short_name": "2048",
   "id": "./",
   "start_url": "./",

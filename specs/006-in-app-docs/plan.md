@@ -19,7 +19,7 @@ mermaid-cli into committed SVGs named by content hash.
 | Principle | Status | Notes |
 |---|---|---|
 | I. Blazor/C# first | ✅ | Build-time C#; no Markdown or Mermaid JS in the browser. |
-| II. .NET 10 | ✅ |  |
+| II. .NET 11 | ✅ | Amended from .NET 10 in [015](../015-dotnet-11/spec.md). |
 | III. Tested | ✅ | Builder unit tests, bUnit page tests, E2E. |
 | IV. Dependencies | ✅ | Markdig (BSD-2), YamlDotNet (MIT), mermaid-cli (MIT) at authoring time. |
 | V. Pages deploy | ✅ | Static files under `/blazor-2048/`. |

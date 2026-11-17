@@ -31,7 +31,7 @@
 ### Functional Requirements
 
 - **FR-001**: Actions MUST use plain major-version tags (reverses spec 013 FR-004).
-- **FR-002**: Shared settings (`net10.0`, nullable, implicit usings, not packable) MUST live once in `Directory.Build.props`; test-project settings in `tests/Directory.Build.props`.
+- **FR-002**: Shared settings (`TargetFramework`, nullable, implicit usings, not packable) MUST live once in `Directory.Build.props`; test-project settings in `tests/Directory.Build.props`. The framework value is `net11.0` as of [015](../015-dotnet-11/spec.md) (it was `net10.0` when this spec shipped).
 - **FR-003**: The docs build and footer build info MUST move to `src/Blazor2048/build/Docs.targets` and `BuildInfo.targets` with unchanged behavior.
 - **FR-004**: Package versions MUST stay in the `.csproj` files so Dependabot can update them.
 

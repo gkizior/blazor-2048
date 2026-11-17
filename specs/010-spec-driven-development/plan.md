@@ -18,7 +18,7 @@ each spec's plan and tasks sit under it in the sidebar. A unit test keeps the fo
 | Principle | Status | Notes |
 |---|---|---|
 | I. Blazor/C# first | ✅ | Sidebar nesting in Razor; no JS. |
-| II. .NET 10 | ✅ |  |
+| II. .NET 11 | ✅ | Amended from .NET 10 in [015](../015-dotnet-11/spec.md). |
 | III. Tested | ✅ | `SpecsTests` plus docs builder and page tests. |
 | IV. Dependencies | ✅ | None. |
 | V. Pages deploy | ✅ | Specs ship with the docs. |
