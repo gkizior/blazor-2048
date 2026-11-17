@@ -17,7 +17,7 @@ and a base class on Playwright's `BrowserTest`.
 | Principle | Status | Notes |
 |---|---|---|
 | I. Blazor/C# first | ✅ | Tests in C#; test-side JS only inside Playwright evaluations. |
-| II. .NET 10 | ✅ |  |
+| II. .NET 11 | ✅ | Amended from .NET 10 in [015](../015-dotnet-11/spec.md). |
 | III. Tested | ✅ | This spec is the source of principle III. |
 | IV. Dependencies | ✅ | All latest stable, Apache-2.0/MIT. |
 | V. Pages deploy | ✅ | Deploy needs build + e2e jobs. |

@@ -134,3 +134,10 @@
           href: ../specs/014-action-tags-and-clean-csproj/plan.md
         - name: Tasks
           href: ../specs/014-action-tags-and-clean-csproj/tasks.md
+    - name: 015 .NET 11
+      href: ../specs/015-dotnet-11/spec.md
+      items:
+        - name: Plan
+          href: ../specs/015-dotnet-11/plan.md
+        - name: Tasks
+          href: ../specs/015-dotnet-11/tasks.md

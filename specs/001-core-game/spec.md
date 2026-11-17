@@ -9,7 +9,7 @@
 - **Source**: the repository's original GitHub description, set with the first commit
   ([`93c5cee`](https://github.com/gkizior/blazor-2048/commit/93c5cee)). The original message asking for the game is not in the repository, so this
   spec was reconstructed afterwards from that description, the first commit and the follow-up
-  standing rule "target .NET 10" (see [002](../002-blazor-first-minimal-interop/spec.md)), applied in [`bc0de4d`](https://github.com/gkizior/blazor-2048/commit/bc0de4d).
+  standing rule "target .NET 10" (see [002](../002-blazor-first-minimal-interop/spec.md)), applied in [`bc0de4d`](https://github.com/gkizior/blazor-2048/commit/bc0de4d), then retargeted to .NET 11 in [015](../015-dotnet-11/spec.md).
 - **Date**: 2026-10-08
 
 ## User Scenarios & Testing
@@ -69,7 +69,7 @@ A player opens the site on a desktop and plays 2048 with the arrow keys (or WASD
 - **FR-004**: The best score MUST persist in browser storage across reloads.
 - **FR-005**: The app MUST be an installable PWA that works offline after the first visit.
 - **FR-006**: The app MUST deploy to GitHub Pages and work under the `/blazor-2048/` base path, including deep links.
-- **FR-007**: The app MUST target .NET 10 (originally .NET 9, retargeted in [`bc0de4d`](https://github.com/gkizior/blazor-2048/commit/bc0de4d)).
+- **FR-007**: The app MUST target .NET 11 (originally .NET 9, retargeted to .NET 10 in [`bc0de4d`](https://github.com/gkizior/blazor-2048/commit/bc0de4d), then to .NET 11 in [015](../015-dotnet-11/spec.md)).
 
 ## Success Criteria
 

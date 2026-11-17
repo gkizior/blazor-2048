@@ -2,9 +2,9 @@
 
 ## Toolchain
 
-- **.NET 10 SDK** (`global.json`, roll forward to the latest feature band).
+- **.NET 11 SDK** (`global.json`, roll forward to the latest feature band).
 - `global.json` also sets `"test": { "runner": "Microsoft.Testing.Platform" }`, which xUnit v3
-  needs for `dotnet test` on the .NET 10 SDK.
+  needs for `dotnet test` on the .NET 11 SDK.
 - **Node 22.13+** (CI uses 24) only if you change a Mermaid diagram (see [Docs system](docs-system.md)).
 
 ## CI/CD pipeline
@@ -85,11 +85,13 @@ offline. A new deploy changes the manifest version, and the worker swaps caches 
 diagram tooling in `tools/mermaid` (mermaid-cli, puppeteer) weekly
 (Mondays 08:00 America/Chicago) and groups minor and patch updates into one PR per ecosystem.
 Each PR runs the full test pipeline without deploying. Actions use plain major-version tags
-(`actions/checkout@v7`); Dependabot bumps them when a new major ships.
+(`actions/checkout@v7`); Dependabot bumps them when a new major ships. Major bumps of the
+.NET SDK and of `Microsoft.AspNetCore.*` / `Microsoft.Extensions.*` are ignored, so a move to
+.NET 12 comes to Garrett as a decision (the same way .NET 11 did).
 
 ## Project files
 
-- `Directory.Build.props` (repo root): `net10.0`, nullable, implicit usings, not packable, for every project.
+- `Directory.Build.props` (repo root): `net11.0`, nullable, implicit usings, not packable, for every project.
 - `tests/Directory.Build.props`: xUnit v3 test projects are executables with a global `using Xunit`.
 - `src/Blazor2048/Blazor2048.csproj`: version, packages and references only; it imports
   `build/Docs.targets` (docs build) and `build/BuildInfo.targets` (footer build info).

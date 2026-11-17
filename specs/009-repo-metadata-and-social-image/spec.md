@@ -15,7 +15,7 @@
 
 **Acceptance Scenarios**:
 
-1. **Given** the GitHub repo page, **When** it is viewed, **Then** the description says .NET 10 Blazor WebAssembly PWA, the homepage is the Pages site, and topics describe the stack.
+1. **Given** the GitHub repo page, **When** it is viewed, **Then** the description says .NET 11 Blazor WebAssembly PWA, the homepage is the Pages site, and topics describe the stack (updated from .NET 10 in [015](../015-dotnet-11/spec.md)).
 2. **Given** the README, **When** it is read, **Then** it has CI and deploy badges, light and dark screenshots, and no .NET 9 references.
 
 ### User Story 2 - Links look good when shared (Priority: P2)
@@ -29,7 +29,7 @@
 ### Functional Requirements
 
 - **FR-001**: Description, homepage and topics MUST be set with `gh repo edit`.
-- **FR-002**: README and docs MUST NOT contain stale .NET 9 references.
+- **FR-002**: README and docs MUST NOT contain stale .NET 9 or (as of [015](../015-dotnet-11/spec.md)) stale current-state .NET 10 references.
 - **FR-003**: README MUST show CI, deploy and license badges and a screenshot.
 - **FR-004**: A 1280x640 social preview PNG MUST be committed at `docs/images/social-preview.png`.
 - **FR-005**: `index.html` MUST reference it with absolute URLs under `https://gkizior.github.io/blazor-2048/`.

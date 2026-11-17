@@ -7,7 +7,7 @@ updates:
   - package-ecosystem: "nuget"
     directory: "/"
     ignore:
-      # Project stays on .NET 10; hold Microsoft.* runtime packages at 10.x.
+      # Stay on .NET 11; hold .NET 12+ majors so the next runtime bump is Garrett's decision.
       - dependency-name: "Microsoft.AspNetCore.*"
         update-types: ["version-update:semver-major"]
       - dependency-name: "Microsoft.Extensions.*"
@@ -37,6 +37,7 @@ updates:
   - package-ecosystem: "dotnet-sdk"
     directory: "/"
     ignore:
+      # Stay on the .NET 11 SDK; hold .NET 12+ majors so the next SDK major is Garrett's decision.
       - dependency-name: "dotnet-sdk"
         update-types: ["version-update:semver-major"]
     schedule:

@@ -37,6 +37,7 @@
 - **FR-003**: Minor and patch updates MUST be grouped per ecosystem.
 - **FR-004**: The workflow MUST run tests on `pull_request` and MUST NOT deploy from PRs.
 - **FR-005**: All NuGet packages and Actions MUST be on their latest stable versions with free licenses; prereleases are forbidden.
+- **FR-006**: Dependabot MUST ignore `semver-major` updates of the `dotnet-sdk` ecosystem and of `Microsoft.AspNetCore.*` / `Microsoft.Extensions.*`, so the next runtime major (.NET 12) comes to Garrett as a decision (added in [015](../015-dotnet-11/spec.md)).
 
 ## Success Criteria
 

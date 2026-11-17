@@ -15,7 +15,7 @@ public abstract class AppTestContext : BunitContext
     protected static readonly BuildInfo TestBuild = new(
         Author: "Garrett Kizior",
         Version: "1.2.3",
-        Runtime: ".NET 10.0.0",
+        Runtime: ".NET 11.0.0",
         Commit: "0123456789abcdef0123456789abcdef01234567",
         BuildDate: "2026-10-08T01:02:03Z",
         RepositoryUrl: "https://github.com/gkizior/blazor-2048");

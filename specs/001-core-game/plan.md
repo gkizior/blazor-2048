@@ -10,7 +10,7 @@ and touch input in C#. GitHub Actions publishes the app and deploys it to Pages.
 
 ## Technical Context
 
-- **Language/Version**: C# / .NET 10 (first built on .NET 9)
+- **Language/Version**: C# / .NET 11 (first built on .NET 9, then .NET 10)
 - **Primary Dependencies**: Microsoft.AspNetCore.Components.WebAssembly (MIT)
 - **Storage**: `localStorage` key `blazor2048.best` (through `BestScoreStore`)
 - **Testing**: xUnit v3 (engine), bUnit (GameBoard), Playwright for .NET (published site)
@@ -22,7 +22,7 @@ and touch input in C#. GitHub Actions publishes the app and deploys it to Pages.
 | Principle | Status | Notes |
 |---|---|---|
 | I. Blazor/C# first | ✅ | Input, rules and rendering in C#; only localStorage and focus use interop. |
-| II. .NET 10 | ✅ | Retargeted from net9.0 in [`bc0de4d`](https://github.com/gkizior/blazor-2048/commit/bc0de4d). |
+| II. .NET 11 | ✅ | Retargeted from net9.0 in [`bc0de4d`](https://github.com/gkizior/blazor-2048/commit/bc0de4d), then to net11.0 in [015](../015-dotnet-11/spec.md). |
 | III. Tested | ✅ | GameTests, GameBoardTests, GameE2ETests. |
 | IV. Dependencies | ✅ | Only Microsoft packages (MIT). |
 | V. Pages deploy | ✅ | `.github/workflows/deploy.yml`, `scripts/prepare-pages.py`. |

@@ -29,7 +29,7 @@ elkjs EPL-2.0 OR GPL-3.0-or-later) are used only while rendering and nothing fro
 | Principle | Status | Notes |
 |---|---|---|
 | I. Blazor/C# first | ✅ | Node is build-time only; no app JavaScript. |
-| II. .NET 10 | ✅ | SDK 10.0.403 is the latest; .NET 11 is still RC. |
+| II. .NET 11 | ✅ | At the time of this plan, SDK 10.0.403 was the latest and .NET 11 was still RC. Retargeted in [015](../015-dotnet-11/spec.md). |
 | III. Tested | ✅ | Full suite with E2E; unit test for version reading. |
 | IV. Dependencies | ✅ | Everything on latest stable; npm now tracked. |
 | V. Pages deploy | ✅ | Normal deploy. |

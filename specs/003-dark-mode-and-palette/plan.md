@@ -19,7 +19,7 @@ Tokens on `:root` use `light-dark()`; `MainLayout` renders `data-theme="system|l
 | Principle | Status | Notes |
 |---|---|---|
 | I. Blazor/C# first | ✅ | CSS + Blazor-rendered attribute; storage via BrowserStorage. |
-| II. .NET 10 | ✅ |  |
+| II. .NET 11 | ✅ | Amended from .NET 10 in [015](../015-dotnet-11/spec.md). |
 | III. Tested | ✅ | bUnit, contrast unit test, E2E persistence and system-scheme tests. |
 | IV. Dependencies | ✅ | None added. |
 | V. Pages deploy | ✅ |  |

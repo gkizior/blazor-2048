@@ -21,9 +21,9 @@ as cheating. The only interop allowed is what a feature cannot do without, each 
 Anything that can be done at build time in C# (Markdown, Mermaid diagrams) is done at build time.
 Test code may run JavaScript in the browser (Playwright `EvaluateAsync`); the app may not.
 
-### II. .NET 10
+### II. .NET 11
 
-All projects target `net10.0`. `global.json` pins the .NET 10 SDK (roll forward to the latest
+All projects target `net11.0`. `global.json` pins the .NET 11 SDK (roll forward to the latest
 feature band). Moving to a new major version is a constitution amendment.
 
 ### III. Tested, and green before deploy
@@ -99,8 +99,10 @@ This constitution overrides other conventions in the repo. Amendments are made b
 his request) in a commit that updates this file, bumps the version below and notes the change in
 the affected specs. Plans that need an exception must say so in their "Complexity Tracking" table.
 
-**Version**: 1.1.0 | **Ratified**: 2026-10-08 | **Last Amended**: 2026-10-08
+**Version**: 1.2.0 | **Ratified**: 2026-10-08 | **Last Amended**: 2026-11-17
 
 Amendments:
+- 1.2.0 (2026-11-17): principle II retargeted from .NET 10 to .NET 11, for
+  [015 .NET 11](../../specs/015-dotnet-11/spec.md).
 - 1.1.0 (2026-10-08): added principle IX, "Snappy and lean at every scale", for
   [011 Board sizes](../../specs/011-board-sizes/spec.md).

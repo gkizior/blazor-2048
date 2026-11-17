@@ -11,7 +11,7 @@ sizes before and after optimizing, and pick the custom maximum from those number
 
 ## Technical Context
 
-- **Language/Version**: C# / .NET 10 (Blazor WebAssembly)
+- **Language/Version**: C# / .NET 11 (Blazor WebAssembly)
 - **Primary Dependencies**: none added
 - **Storage**: `localStorage` through `BrowserStorage`: `blazor2048.size`, `blazor2048.best.{N}x{N}` (4x4 migrated from `blazor2048.best`)
 - **Testing**: xUnit v3 (engine for every size, validation, allocations), bUnit (split button, menu, dialog), Playwright for .NET (presets, custom, persistence, 10x10 rapid input)
@@ -24,7 +24,7 @@ sizes before and after optimizing, and pick the custom maximum from those number
 | Principle | Status | Notes |
 |---|---|---|
 | I. Blazor/C# first | ✅ | Menu, dialog, focus and click-outside in Razor; focus via Blazor's `FocusAsync`. |
-| II. .NET 10 | ✅ | |
+| II. .NET 11 | ✅ | Amended from .NET 10 in [015](../015-dotnet-11/spec.md). |
 | III. Tested | ✅ | Every size 2…MaxSize in unit tests; PerfTrace evidence before/after. |
 | IV. Dependencies | ✅ | None added. |
 | V. Pages deploy | ✅ | |
@@ -158,7 +158,7 @@ What made the difference, in order of effect:
    download (+75%) and no fewer dropped frames, because the time is in the browser's style work, not
    in .NET; not used.
 
-### Engine allocations (.NET 10 JIT, a move plus building the render list)
+### Engine allocations (measured on the .NET 10 JIT, a move plus building the render list)
 
 | Size | Before B/move | Before µs/move | After B/move | After µs/move |
 |---|---|---|---|---|

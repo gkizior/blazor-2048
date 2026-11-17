@@ -52,7 +52,7 @@ public class FeatureE2ETests(SiteServer site) : AppTest(site)
         var footer = page.Locator("footer.app-footer");
 
         await Expect(footer).ToContainTextAsync("Garrett Kizior");
-        await Expect(footer).ToContainTextAsync(".NET 10");
+        await Expect(footer).ToContainTextAsync(".NET 11");
         var sha = page.Locator("a.footer-sha");
         Assert.Matches("^[0-9a-f]{7}$", (await sha.InnerTextAsync()).Trim());
         Assert.Matches("^https://github.com/gkizior/blazor-2048/commit/[0-9a-f]{40}$", await sha.GetAttributeAsync("href"));

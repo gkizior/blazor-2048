@@ -37,7 +37,7 @@ public sealed record BuildInfo(
         return new BuildInfo(
             Author: "Garrett Kizior",
             Version: version,
-            Runtime: RuntimeInformation.FrameworkDescription, // e.g. ".NET 10.0.1"
+            Runtime: RuntimeInformation.FrameworkDescription, // e.g. ".NET 11.0.0"
             Commit: Get("BuildCommit"),
             BuildDate: Get("BuildDate"),
             RepositoryUrl: meta.TryGetValue("RepositoryUrl", out var repo) ? repo.TrimEnd('/') : "");

@@ -14,7 +14,7 @@
 The approved plan (condensed): bump Markdig 1.5.1 → 1.6.0; bump mermaid-cli 12.0.0 → 12.2.0 and
 puppeteer 25.12.0 → 25.16.0 and move their pins into a committed `package.json` + `package-lock.json`
 so Dependabot tracks them (npm ecosystem); re-render every diagram; pin every GitHub Action to a full
-commit SHA; update specs and docs. .NET stays on 10 (LTS, SDK 10.0.403 is the latest) until .NET 11 is GA.
+commit SHA; update specs and docs. .NET stayed on 10 (LTS, SDK 10.0.403 was the latest) until .NET 11 was GA; the retarget is [015](../015-dotnet-11/spec.md).
 
 ## User Scenarios & Testing
 

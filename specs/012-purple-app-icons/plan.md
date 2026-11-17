@@ -27,7 +27,7 @@ are dropped: they pointed at icons with transparent corners, which iOS fills wit
 | Principle | Status | Notes |
 |---|---|---|
 | I. Blazor/C# first | ✅ | Static assets only; no app JavaScript. |
-| II. .NET 10 | ✅ | No change. |
+| II. .NET 11 | ✅ | Amended from .NET 10 in [015](../015-dotnet-11/spec.md). No framework change in this spec. |
 | III. Tested | ✅ | Unit test for manifest icons and `favicon.ico`; checked live after deploy. |
 | IV. Dependencies | ✅ | None added (Chromium and Pillow are only used offline to render). |
 | V. Pages deploy | ✅ | Ships with the normal deploy. |

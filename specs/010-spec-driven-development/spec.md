@@ -10,7 +10,7 @@ The full message is condensed here; its last paragraph is quoted verbatim.
   `.specify/templates/`, `specs/NNN-feature-name/{spec,plan,tasks}.md`) without Copilot or the
   `specify` CLI.
 - A constitution with Garrett's principles: Blazor/C# first with minimal interop and no custom JS;
-  .NET 10; xUnit v3 + latest stable bUnit + Playwright for .NET with all suites green before deploy;
+  .NET 11 (amended from .NET 10 in [015](../015-dotnet-11/spec.md)); xUnit v3 + latest stable bUnit + Playwright for .NET with all suites green before deploy;
   latest stable free-license packages kept current by Dependabot weekly (Monday 08:00 Central) and
   merged after CI passes; deploy through the GitHub Pages workflow; accessibility (contrast,
   reduced motion); docs with Mermaid.

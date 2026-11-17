@@ -18,7 +18,7 @@ informational version and `RuntimeInformation.FrameworkDescription`; `AppFooter`
 | Principle | Status | Notes |
 |---|---|---|
 | I. Blazor/C# first | ✅ | Pure Razor + MSBuild. |
-| II. .NET 10 | ✅ | Shows the running .NET runtime. |
+| II. .NET 11 | ✅ | Shows the running .NET runtime (now 11.x; amended in [015](../015-dotnet-11/spec.md)). |
 | III. Tested | ✅ | bUnit + E2E; live SHA verified after each deploy. |
 | IV. Dependencies | ✅ | None. |
 | V. Pages deploy | ✅ | CI provides `GITHUB_SHA`. |

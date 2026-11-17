@@ -83,7 +83,7 @@ Big boards made the engine's data structures matter, so a move allocates nothing
 `GC.GetAllocatedBytesForCurrentThread()`: under one byte per move on 4×4, 10×10 and the largest
 board. The first, straightforward generalization (`int[,]`, LINQ, per-line arrays and lists) allocated
 3.7 KB per move on 4×4, 12.5 KB on 10×10 and 25.6 KB on 16×16, and was 3–5 times slower (a move plus
-building the render list, .NET 10 JIT: 10.3 → 1.4 µs on 4×4, 10.1 → 3.0 µs on 16×16).
+building the render list, measured on the .NET 10 JIT: 10.3 → 1.4 µs on 4×4, 10.1 → 3.0 µs on 16×16).
 
 ## A move
 
